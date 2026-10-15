@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" data-theme="auto">
+<head th:replace="fragments/header :: head"></head>
+<body>
+    <div th:replace="fragments/header :: header-content"></div>
+    <div th:replace="fragments/sidebar :: sidebar-content"></div>
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h5 th:text="'Managing: ' + ${paper.title}">Managing Paper</h5>
+            <p class="text-muted mb-0" th:text="'Status: ' + ${paper.status} + ' | Score: ' + ${paper.totalScore} + ' | Questions: ' + ${#lists.size(paperQuestions)}">
+                Paper info</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a th:href="@{/teacher/papers/assemble/{id}(id=${paper.id})}" class="btn btn-info text-white">
+                <i class="bi bi-shuffle me-2"></i>Auto Assembly
+            </a>
+            <a th:href="@{/teacher/papers}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left me-2"></i>Back
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Current Questions in Paper -->
+        <div class="col-lg-7">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-list-check me-2"></i>
+                        Questions in Paper (<span th:text="${#lists.size(paperQuestions)}">0</span>)
+                    </h6>
+                </div>
+                <div class="card-body p-0">
+                    <div th:each="pq, iter : ${paperQuestions}" class="p-3 border-bottom">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <div class="d-flex gap-2 mb-1">
+                                    <span class="badge bg-secondary" th:text="'Q' + ${pq.questionOrder}">Q1</span>
+                                    <span class="badge bg-primary" th:text="${pq.question?.questionType}">TYPE</span>
+                                    <span class="badge bg-info" th:text="${pq.score + ' pts'}">score</span>
+                                </div>
+                                <p class="mb-1" th:text="${pq.question?.content}">Question content</p>
+                                <small class="text-success">
+                                    Answer: <strong th:text="${pq.question?.correctAnswer}">Answer</strong>
+                                </small>
+                            </div>
+                            <a th:href="@{/teacher/papers/questions/{pid}/remove/{qid}(pid=${paper.id}, qid=${pq.questionId})}"
+                               class="btn btn-sm btn-outline-danger ms-2 confirm-link"
+                               data-confirm="Remove this question from the paper?" data-confirm-title="Remove Question">
+                                <i class="bi bi-dash-circle"></i>
+                            </a>
+                        </div>
+                    </div>
+                    <div th:if="${#lists.isEmpty(paperQuestions)}" class="text-center py-4 text-muted">
+                        No questions added yet.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Available Questions to Add -->
+        <div class="col-lg-5">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-plus-circle me-2"></i>Add Questions
+                    </h6>
+                </div>
+                <div class="card-body p-0" style="max-height: 600px; overflow-y: auto;">
+                    <form th:each="q : ${availableQuestions}" class="p-3 border-bottom"
+                          th:action="@{/teacher/papers/questions/{pid}/add(pid=${paper.id})}" method="post">
+                        <input type="hidden" name="questionId" th:value="${q.id}">
+                        <div class="d-flex gap-2 mb-2">
+                            <span class="badge bg-primary" th:text="${q.questionType}">TYPE</span>
+                            <span class="badge" th:classappend="${q.difficulty == 'EASY'} ? 'bg-success' : (${q.difficulty == 'MEDIUM'} ? 'bg-warning' : 'bg-danger')"
+                                  th:text="${q.difficulty}">DIFF</span>
+                        </div>
+                        <p class="small mb-2" th:text="${q.content}">content</p>
+                        <div class="d-flex gap-2 align-items-center">
+                            <input type="number" name="score" class="form-control form-control-sm"
+                                   style="width: 80px;" th:value="${q.score}" step="0.5" min="1">
+                            <button type="submit" class="btn btn-sm btn-primary">
+                                <i class="bi bi-plus"></i> Add
+                            </button>
+                        </div>
+                    </form>
+                    <div th:if="${#lists.isEmpty(availableQuestions)}" class="text-center py-4 text-muted">
+                        All questions have been added.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div th:replace="fragments/footer :: footer-content"></div>
+</body>
+</html>

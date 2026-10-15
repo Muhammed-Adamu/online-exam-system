@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" data-theme="auto">
+<head th:replace="fragments/header :: head"></head>
+<body>
+    <div th:replace="fragments/header :: header-content"></div>
+    <div th:replace="fragments/sidebar :: sidebar-content"></div>
+
+    <!-- Available Exams -->
+    <h5 class="mb-3"><i class="bi bi-pencil-square me-2"></i>Available Exams</h5>
+    <div class="row g-4 mb-5">
+        <div th:each="paper : ${papers}" class="col-lg-6">
+            <div class="card exam-card h-100">
+                <div class="card-body">
+                    <h5 class="card-title" th:text="${paper.title}">Title</h5>
+                    <p class="text-muted small" th:text="${paper.description}">Description</p>
+                    <div class="d-flex gap-3 mb-3">
+                        <span><i class="bi bi-question-circle me-1"></i><span th:text="${paper.questionCount}">0</span> questions</span>
+                        <span><i class="bi bi-clock me-1"></i><span th:text="${paper.durationMinutes}">0</span> min</span>
+                        <span><i class="bi bi-bar-chart me-1"></i><span th:text="${paper.totalScore}">0</span> pts</span>
+                    </div>
+                    <div th:if="${recordMap.containsKey(paper.id)}" class="alert alert-info mb-0">
+                        <i class="bi bi-check-circle me-2"></i>
+                        Completed - Score: <strong th:text="${recordMap.get(paper.id).totalScore}">0</strong>
+                        <a class="ms-2" th:href="@{/student/exam/result/{id}(id=${recordMap.get(paper.id).id})}">View Result</a>
+                    </div>
+                    <a th:unless="${recordMap.containsKey(paper.id)}"
+                       th:href="@{/student/exam/start/{id}(id=${paper.id})}"
+                       class="btn btn-primary">
+                        <i class="bi bi-play-fill me-2"></i>Start Exam
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div th:if="${#lists.isEmpty(papers)}" class="col-12 text-center py-5">
+            <i class="bi bi-inbox display-1 text-muted"></i>
+            <h5 class="text-muted mt-3">No exams available</h5>
+        </div>
+    </div>
+
+    <!-- Exam History -->
+    <h5 class="mb-3"><i class="bi bi-clock-history me-2"></i>My Exam History</h5>
+    <div class="card">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead><tr>
+                        <th>Exam</th><th>Status</th><th>Score</th><th>Time</th><th>Action</th>
+                    </tr></thead>
+                    <tbody>
+                        <tr th:each="record : ${records}">
+                            <td th:text="${record.paperTitle}">Paper</td>
+                            <td>
+                                <span class="badge" th:classappend="${record.status == 'GRADED'} ? 'bg-success' : (${record.status == 'IN_PROGRESS'} ? 'bg-warning' : 'bg-info')"
+                                      th:text="${record.status}">Status</span>
+                            </td>
+                            <td><strong th:text="${record.totalScore != null ? record.totalScore : '-'}">-</strong></td>
+                            <td th:text="${record.submitTime != null ? record.submitTime : record.startTime}">Time</td>
+                            <td>
+                                <a th:if="${record.status == 'IN_PROGRESS'}"
+                                   th:href="@{/student/exam/take/{id}(id=${record.id})}"
+                                   class="btn btn-sm btn-warning">Continue</a>
+                                <a th:if="${record.status != 'IN_PROGRESS'}"
+                                   th:href="@{/student/exam/result/{id}(id=${record.id})}"
+                                   class="btn btn-sm btn-outline-info">View</a>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(records)}">
+                            <td colspan="5" class="text-center py-4 text-muted">No exam history yet.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div th:replace="fragments/footer :: footer-content"></div>
+</body>
+</html>

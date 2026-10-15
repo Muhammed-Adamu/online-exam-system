@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" data-theme="auto">
+<head th:replace="fragments/header :: head"></head>
+<body>
+    <div th:replace="fragments/header :: header-content"></div>
+    <div th:replace="fragments/sidebar :: sidebar-content"></div>
+
+    <!-- Toolbar: Add + Filters -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+        <div class="d-flex gap-2">
+            <a th:href="@{/admin/users/create}" class="btn btn-primary">
+                <i class="bi bi-person-plus me-2"></i>Add User
+            </a>
+            <div class="dropdown" id="batchActionsDropdown" style="display:none;">
+                <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" disabled id="batchBtn">
+                    <i class="bi bi-check2-square me-1"></i>Actions <span id="batchCount"></span>
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="javascript:void(0)" onclick="batchAction('enable')">
+                        <i class="bi bi-toggle-on text-success me-2"></i>Enable Selected</a></li>
+                    <li><a class="dropdown-item" href="javascript:void(0)" onclick="batchAction('disable')">
+                        <i class="bi bi-toggle-off text-warning me-2"></i>Disable Selected</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item text-danger" href="javascript:void(0)" onclick="batchAction('delete')">
+                        <i class="bi bi-trash me-2"></i>Delete Selected</a></li>
+                </ul>
+            </div>
+        </div>
+        <!-- Filter Form -->
+        <form class="d-flex gap-2 flex-wrap" method="get" th:action="@{/admin/users}">
+            <select name="role" class="form-select" style="width:140px;" onchange="this.form.submit()">
+                <option value="">All Roles</option>
+                <option value="ADMIN" th:selected="${currentRole == 'ADMIN'}">Admin</option>
+                <option value="TEACHER" th:selected="${currentRole == 'TEACHER'}">Teacher</option>
+                <option value="STUDENT" th:selected="${currentRole == 'STUDENT'}">Student</option>
+            </select>
+            <select name="status" class="form-select" style="width:140px;" onchange="this.form.submit()">
+                <option value="">All Status</option>
+                <option value="1" th:selected="${currentStatus != null && currentStatus == 1}">Active</option>
+                <option value="0" th:selected="${currentStatus != null && currentStatus == 0}">Disabled</option>
+            </select>
+            <div class="input-group" style="width:260px;">
+                <input type="text" name="keyword" class="form-control" placeholder="Search name/username..."
+                       th:value="${currentKeyword}" id="searchInput">
+                <button class="btn btn-outline-secondary" type="submit"><i class="bi bi-search"></i></button>
+                <a th:if="${currentRole != null || currentStatus != null || currentKeyword != null}"
+                   th:href="@{/admin/users}" class="btn btn-outline-secondary" title="Clear filters">
+                    <i class="bi bi-x-lg"></i>
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Results info -->
+    <div class="text-muted small mb-2" th:if="${totalUsers != null}">
+        <span th:if="${totalUsers > 0}">
+            Showing <strong th:text="${(currentPage - 1) * pageSize + 1}">1</strong>-<strong th:text="${#lists.size(users) + (currentPage - 1) * pageSize}">10</strong>
+            of <strong th:text="${totalUsers}">0</strong> users
+        </span>
+        <span th:if="${totalUsers == 0}" class="text-muted">No users found</span>
+    </div>
+
+    <!-- Users Table -->
+    <div class="card">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle">
+                    <thead>
+                        <tr>
+                            <th width="40">
+                                <input type="checkbox" class="form-check-input" id="selectAll"
+                                       onchange="toggleSelectAll(this)" title="Select All">
+                            </th>
+                            <th>User</th>
+                            <th>Role</th>
+                            <th>Contact</th>
+                            <th>Class</th>
+                            <th>Status</th>
+                            <th class="text-center" width="160">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="user : ${users}">
+                            <td>
+                                <input type="checkbox" class="form-check-input user-checkbox"
+                                       th:value="${user.id}" onchange="updateBatchUI()">
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center"
+                                         style="width:36px;height:36px;background:var(--accent-light);color:var(--accent-color);font-weight:700;font-size:0.85rem;">
+                                        <span th:text="${#strings.substring(user.realName, 0, 1)}">U</span>
+                                    </div>
+                                    <div>
+                                        <strong th:text="${user.realName}">Name</strong>
+                                        <br><small class="text-muted" th:text="'@' + ${user.username}">@user</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge" th:classappend="|role-badge-${#strings.toLowerCase(user.role)}|"
+                                      th:text="${user.role}">ROLE</span>
+                            </td>
+                            <td>
+                                <div th:if="${user.email != null && !user.email.isEmpty()}" class="small"><i class="bi bi-envelope me-1 text-muted"></i><span th:text="${user.email}">email</span></div>
+                                <div th:if="${user.phone != null && !user.phone.isEmpty()}" class="small"><i class="bi bi-telephone me-1 text-muted"></i><span th:text="${user.phone}">phone</span></div>
+                                <span th:unless="${(user.email != null && !user.email.isEmpty()) || (user.phone != null && !user.phone.isEmpty())}" class="text-muted">—</span>
+                            </td>
+                            <td th:text="${user.className} ?: '—'">class</td>
+                            <td>
+                                <span class="badge user-status-badge"
+                                      th:classappend="${user.enabled == 1 ? 'bg-success' : 'bg-danger'}"
+                                      th:text="${user.enabled == 1 ? 'Active' : 'Disabled'}"
+                                      th:attr="data-user-id=${user.id}">Status</span>
+                            </td>
+                            <td>
+                                <div class="d-flex gap-1 justify-content-center">
+                                    <a th:href="@{/admin/users/edit/{id}(id=${user.id})}"
+                                       class="btn btn-sm btn-outline-primary" title="Edit">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <button class="btn btn-sm toggle-btn toggle-user-btn"
+                                            th:classappend="${user.enabled == 1 ? 'btn-outline-warning' : 'btn-outline-success'}"
+                                            th:data-user-id="${user.id}"
+                                            th:data-toggle-url="@{/admin/users/toggle/{id}(id=${user.id})}"
+                                            th:title="${user.enabled == 1 ? 'Disable' : 'Enable'}">
+                                        <i class="bi" th:classappend="${user.enabled == 1 ? 'bi-toggle-off' : 'bi-toggle-on'}"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-info reset-pwd-btn" title="Reset Password"
+                                            th:attr="data-user-id=${user.id}" th:data-username="${user.username}">
+                                        <i class="bi bi-key"></i>
+                                    </button>
+                                    <a th:href="@{/admin/users/delete/{id}(id=${user.id})}"
+                                       class="btn btn-sm btn-outline-danger confirm-link" title="Delete"
+                                       th:attr="data-confirm=|Delete user '${user.username}'? This cannot be undone.|"
+                                       data-confirm-title="Delete User">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(users)}">
+                            <td colspan="7" class="text-center py-5 text-muted">
+                                <i class="bi bi-people display-5 d-block mb-2 opacity-25"></i>
+                                <span th:if="${currentKeyword != null || currentRole != null || currentStatus != null}">
+                                    No users match your filters. <a th:href="@{/admin/users}">Clear filters</a>
+                                </span>
+                                <span th:unless="${currentKeyword != null || currentRole != null || currentStatus != null}">
+                                    No users yet. <a th:href="@{/admin/users/create}">Create the first user</a>
+                                </span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    <div th:if="${totalPages != null && totalPages > 1}" class="d-flex justify-content-between align-items-center mt-3">
+        <div class="text-muted small">Page <strong th:text="${currentPage}">1</strong> of <strong th:text="${totalPages}">1</strong></div>
+        <nav>
+            <ul class="pagination pagination-sm mb-0">
+                <li class="page-item" th:classappend="${currentPage <= 1} ? 'disabled'">
+                    <a class="page-link" th:href="@{/admin/users(page=${currentPage - 1}, role=${currentRole}, status=${currentStatus}, keyword=${currentKeyword})}">
+                        <i class="bi bi-chevron-left"></i></a>
+                </li>
+                <th:block th:each="i : ${#numbers.sequence(1, totalPages)}">
+                    <th:block th:if="${i >= currentPage - 2 && i <= currentPage + 2}">
+                        <li class="page-item" th:classappend="${i == currentPage} ? 'active'">
+                            <a class="page-link" th:href="@{/admin/users(page=${i}, role=${currentRole}, status=${currentStatus}, keyword=${currentKeyword})}"
+                               th:text="${i}">1</a>
+                        </li>
+                    </th:block>
+                </th:block>
+                <li class="page-item" th:classappend="${currentPage >= totalPages} ? 'disabled'">
+                    <a class="page-link" th:href="@{/admin/users(page=${currentPage + 1}, role=${currentRole}, status=${currentStatus}, keyword=${currentKeyword})}">
+                        <i class="bi bi-chevron-right"></i></a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+
+    <div th:replace="fragments/footer :: footer-content"></div>
+
+    <script>
+        // ============================================
+        // Toggle User Status — event delegation
+        // ============================================
+        document.addEventListener('click', function(e) {
+            var btn = e.target.closest('.toggle-user-btn');
+            if (!btn) return;
+
+            e.preventDefault();
+            var icon = btn.querySelector('i');
+            var originalIconClass = icon.className;
+            var originalBtnClass = btn.className;
+            var url = btn.getAttribute('data-toggle-url');
+
+            icon.className = 'bi bi-hourglass-split spin';
+            btn.disabled = true;
+
+            fetch(url)
+                .then(function(r) {
+                    if (!r.ok) throw new Error('HTTP ' + r.status);
+                    return r.json();
+                })
+                .then(function(data) {
+                    if (data.success) {
+                        if (data.enabled === 1) {
+                            btn.className = 'btn btn-sm btn-outline-warning toggle-btn toggle-user-btn';
+                            btn.title = 'Disable';
+                            icon.className = 'bi bi-toggle-off';
+                        } else {
+                            btn.className = 'btn btn-sm btn-outline-success toggle-btn toggle-user-btn';
+                            btn.title = 'Enable';
+                            icon.className = 'bi bi-toggle-on';
+                        }
+                        var userId = btn.getAttribute('data-user-id');
+                        var badge = document.querySelector('.user-status-badge[data-user-id="' + userId + '"]');
+                        if (badge) {
+                            badge.textContent = data.statusText;
+                            badge.className = 'badge user-status-badge ' + (data.enabled === 1 ? 'bg-success' : 'bg-danger');
+                        }
+                        window.showToast('User ' + data.statusText.toLowerCase() + ' successfully.', 'success');
+                    } else {
+                        window.showToast('Toggle failed.', 'error');
+                        icon.className = originalIconClass;
+                        btn.className = originalBtnClass;
+                    }
+                    btn.disabled = false;
+                })
+                .catch(function(err) {
+                    console.error('[Toggle] Error:', err);
+                    window.showToast('Toggle failed — check console.', 'error');
+                    icon.className = originalIconClass;
+                    btn.className = originalBtnClass;
+                    btn.disabled = false;
+                });
+        });
+
+        // ============================================
+        // Batch Selection
+        // ============================================
+        function toggleSelectAll(checkbox) {
+            document.querySelectorAll('.user-checkbox').forEach(function(cb) {
+                cb.checked = checkbox.checked;
+            });
+            updateBatchUI();
+        }
+
+        function updateBatchUI() {
+            var checked = document.querySelectorAll('.user-checkbox:checked');
+            var dropdown = document.getElementById('batchActionsDropdown');
+            var batchBtn = document.getElementById('batchBtn');
+            var batchCount = document.getElementById('batchCount');
+            var selectAll = document.getElementById('selectAll');
+
+            if (checked.length > 0) {
+                dropdown.style.display = '';
+                batchBtn.disabled = false;
+                batchCount.textContent = '(' + checked.length + ')';
+            } else {
+                dropdown.style.display = 'none';
+                batchBtn.disabled = true;
+                batchCount.textContent = '';
+            }
+            if (selectAll) {
+                selectAll.checked = checked.length === document.querySelectorAll('.user-checkbox').length;
+            }
+        }
+
+        function batchAction(action) {
+            var checked = document.querySelectorAll('.user-checkbox:checked');
+            var ids = Array.from(checked).map(function(cb) { return parseInt(cb.value); });
+            if (ids.length === 0) {
+                window.showToast('No users selected.', 'warning');
+                return;
+            }
+            var messages = {
+                'enable': 'Enable ' + ids.length + ' selected user(s)?',
+                'disable': 'Disable ' + ids.length + ' selected user(s)?',
+                'delete': 'Permanently delete ' + ids.length + ' selected user(s)? This cannot be undone.'
+            };
+            var classes = {
+                'enable': 'btn-success',
+                'disable': 'btn-warning',
+                'delete': 'btn-danger'
+            };
+            window.showConfirmModal(messages[action], function() {
+                fetch(window.location.origin + '/exam/admin/users/batch/' + action, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ids: ids })
+                })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data.success) {
+                        window.showToast(data.message, 'success');
+                        setTimeout(function() { window.location.reload(); }, 800);
+                    } else {
+                        window.showToast(data.message || 'Operation failed.', 'error');
+                    }
+                })
+                .catch(function(err) {
+                    console.error('[Batch] Error:', err);
+                    window.showToast('Batch operation failed.', 'error');
+                });
+            }, { title: 'Batch ' + action.charAt(0).toUpperCase() + action.slice(1),
+                 confirmText: action.charAt(0).toUpperCase() + action.slice(1),
+                 confirmClass: classes[action] || 'btn-primary' });
+        }
+
+        // ============================================
+        // Reset Password
+        // ============================================
+        document.addEventListener('click', function(e) {
+            var btn = e.target.closest('.reset-pwd-btn');
+            if (!btn) return;
+            e.preventDefault();
+            var userId = btn.getAttribute('data-user-id');
+            var username = btn.getAttribute('data-username');
+            var newPwd = prompt('Enter new password for ' + username + ':');
+            if (!newPwd || newPwd.trim().length === 0) return;
+
+            var formData = new URLSearchParams();
+            formData.append('newPassword', newPwd.trim());
+
+            fetch(window.location.origin + '/exam/admin/users/reset-password/' + userId, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: formData.toString()
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                window.showToast(data.message || (data.success ? 'Password reset.' : 'Failed.'), data.success ? 'success' : 'error');
+            })
+            .catch(function() {
+                window.showToast('Failed to reset password.', 'error');
+            });
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.user-checkbox').forEach(function(cb) {
+                cb.addEventListener('change', updateBatchUI);
+            });
+            updateBatchUI();
+        });
+    </script>
+
+    <style>
+        .toggle-btn { width: 34px; height: 34px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; }
+        .toggle-btn i { font-size: 1.1rem; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .spin { animation: spin 0.6s linear infinite; display: inline-block; }
+    </style>
+</body>
+</html>

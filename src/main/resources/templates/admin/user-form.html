@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" data-theme="auto">
+<head th:replace="fragments/header :: head"></head>
+<body>
+    <div th:replace="fragments/header :: header-content"></div>
+    <div th:replace="fragments/sidebar :: sidebar-content"></div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi me-2" th:classappend="${user.id != null} ? 'bi-pencil' : 'bi-person-plus'"></i>
+                        <span th:text="${user.id != null} ? 'Edit User' : 'Create User'">User Form</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form th:action="${user.id != null} ? @{/admin/users/edit/{id}(id=${user.id})} : @{/admin/users/create}"
+                          method="post">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Username <span class="text-danger">*</span></label>
+                                <input type="text" name="username" class="form-control" th:value="${user.username}"
+                                       required placeholder="Enter username">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">
+                                    Password
+                                    <span th:if="${user.id == null}" class="text-danger">*</span>
+                                    <small th:if="${user.id != null}" class="text-muted">(leave empty to keep current)</small>
+                                </label>
+                                <input type="password" name="password" class="form-control"
+                                       placeholder="Enter password"
+                                       th:required="${user.id == null}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Real Name <span class="text-danger">*</span></label>
+                                <input type="text" name="realName" class="form-control" th:value="${user.realName}"
+                                       required placeholder="Enter real name">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Role <span class="text-danger">*</span></label>
+                                <select name="role" class="form-select" required>
+                                    <option value="STUDENT" th:selected="${user.role == 'STUDENT'}">Student</option>
+                                    <option value="TEACHER" th:selected="${user.role == 'TEACHER'}">Teacher</option>
+                                    <option value="ADMIN" th:selected="${user.role == 'ADMIN'}">Admin</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Email</label>
+                                <input type="email" name="email" class="form-control" th:value="${user.email}"
+                                       placeholder="Enter email">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Phone</label>
+                                <input type="text" name="phone" class="form-control" th:value="${user.phone}"
+                                       placeholder="Enter phone">
+                            </div>
+                            <div class="col-md-6" id="classField">
+                                <label class="form-label">Class</label>
+                                <input type="text" name="className" class="form-control" th:value="${user.className}"
+                                       placeholder="e.g., CS2024-A">
+                            </div>
+                        </div>
+                        <div class="mt-4 d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-lg me-2"></i>
+                                <span th:text="${user.id != null} ? 'Update User' : 'Create User'">Save</span>
+                            </button>
+                            <a th:href="@{/admin/users}" class="btn btn-secondary">
+                                <i class="bi bi-x-lg me-2"></i>Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div th:replace="fragments/footer :: footer-content"></div>
+
+    <script>
+        var roleSelect = document.querySelector('select[name="role"]');
+        var classField = document.getElementById('classField');
+
+        function toggleClassField() {
+            if (roleSelect && classField) {
+                classField.style.display = roleSelect.value === 'STUDENT' ? '' : 'none';
+            }
+        }
+
+        if (roleSelect) {
+            roleSelect.addEventListener('change', toggleClassField);
+            // Set initial state
+            toggleClassField();
+        }
+    </script>
+</body>
+</html>

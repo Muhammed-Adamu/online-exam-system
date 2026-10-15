@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" data-theme="auto">
+<head th:replace="fragments/header :: head"></head>
+<body>
+    <div th:replace="fragments/header :: header-content"></div>
+    <div th:replace="fragments/sidebar :: sidebar-content"></div>
+
+    <!-- Search Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form th:action="@{/teacher/questions}" method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Question Type</label>
+                    <select name="type" class="form-select">
+                        <option value="">All Types</option>
+                        <option value="SINGLE_CHOICE">Single Choice</option>
+                        <option value="MULTIPLE_CHOICE">Multiple Choice</option>
+                        <option value="TRUE_FALSE">True/False</option>
+                        <option value="FILL_BLANK">Fill in the Blank</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Category</label>
+                    <select name="category" class="form-select">
+                        <option value="">All Categories</option>
+                        <option th:each="cat : ${categories}" th:value="${cat}" th:text="${cat}">Category</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Difficulty</label>
+                    <select name="difficulty" class="form-select">
+                        <option value="">All</option>
+                        <option value="EASY">Easy</option>
+                        <option value="MEDIUM">Medium</option>
+                        <option value="HARD">Hard</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Keyword</label>
+                    <input type="text" name="keyword" class="form-control" placeholder="Search...">
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-search me-1"></i> Search
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Question Button -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="d-flex gap-2">
+            <a th:href="@{/teacher/questions/create}" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-2"></i>Add Question
+            </a>
+            <a th:href="@{/teacher/questions/import}" class="btn btn-outline-success">
+                <i class="bi bi-file-earmark-excel me-2"></i>Import Excel
+            </a>
+        </div>
+        <div class="text-muted">
+            <span th:text="${#lists.size(questions)}">0</span> questions found
+        </div>
+    </div>
+
+    <!-- Questions List -->
+    <div th:each="q, iterStat : ${questions}" class="card question-card mb-3">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div class="d-flex gap-2 align-items-center">
+                    <span class="badge bg-primary" th:text="${q.questionType}">TYPE</span>
+                    <span class="badge" th:classappend="${q.difficulty == 'EASY'} ? 'bg-success' : (${q.difficulty == 'MEDIUM'} ? 'bg-warning' : 'bg-danger')"
+                          th:text="${q.difficulty}">DIFF</span>
+                    <span class="badge bg-info" th:text="${q.category}">CATEGORY</span>
+                    <span class="badge bg-secondary" th:text="${q.score + ' pts'}">SCORE</span>
+                </div>
+                <div class="btn-group btn-group-sm">
+                    <a th:href="@{/teacher/questions/edit/{id}(id=${q.id})}"
+                       class="btn btn-outline-primary"><i class="bi bi-pencil"></i></a>
+                    <a th:href="@{/teacher/questions/delete/{id}(id=${q.id})}"
+                       class="btn btn-outline-danger confirm-link" data-confirm="Delete this question? This action cannot be undone.">
+                        <i class="bi bi-trash"></i></a>
+                </div>
+            </div>
+            <h6 class="question-content" th:text="${iterStat.count + '. ' + q.content}">Question content</h6>
+            <div class="options-list" th:if="${q.questionType != 'FILL_BLANK'}">
+                <span class="option-item" th:if="${q.optionA != null}"><strong>A.</strong> <span th:text="${q.optionA}">A</span></span>
+                <span class="option-item" th:if="${q.optionB != null}"><strong>B.</strong> <span th:text="${q.optionB}">B</span></span>
+                <span class="option-item" th:if="${q.optionC != null}"><strong>C.</strong> <span th:text="${q.optionC}">C</span></span>
+                <span class="option-item" th:if="${q.optionD != null}"><strong>D.</strong> <span th:text="${q.optionD}">D</span></span>
+            </div>
+            <div class="mt-2">
+                <small class="text-success"><strong>Answer:</strong> <span th:text="${q.correctAnswer}">Answer</span></small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    <div th:if="${questionPage != null && questionPage.getTotal() > 0}" class="d-flex justify-content-between align-items-center mt-3">
+        <div class="text-muted small">
+            Showing <strong th:text="${questionPage.getCurrent()}">1</strong>-<strong th:text="${#lists.size(questions)}">10</strong>
+            of <strong th:text="${questionPage.getTotal()}">0</strong> questions
+        </div>
+        <nav>
+            <ul class="pagination pagination-sm mb-0">
+                <li class="page-item" th:classappend="${questionPage.getCurrent() <= 1} ? 'disabled'">
+                    <a class="page-link" th:href="@{/teacher/questions(type=${currentType}, category=${currentCategory}, difficulty=${currentDifficulty}, keyword=${currentKeyword}, page=${questionPage.getCurrent() - 1})}">
+                        <i class="bi bi-chevron-left"></i>
+                    </a>
+                </li>
+                <li th:each="i : ${#numbers.sequence(1, questionPage.getPages())}"
+                    th:if="${i >= questionPage.getCurrent() - 2 && i <= questionPage.getCurrent() + 2}"
+                    class="page-item" th:classappend="${i == questionPage.getCurrent()} ? 'active'">
+                    <a class="page-link" th:href="@{/teacher/questions(type=${currentType}, category=${currentCategory}, difficulty=${currentDifficulty}, keyword=${currentKeyword}, page=${i})}"
+                       th:text="${i}">1</a>
+                </li>
+                <li class="page-item" th:classappend="${questionPage.getCurrent() >= questionPage.getPages()} ? 'disabled'">
+                    <a class="page-link" th:href="@{/teacher/questions(type=${currentType}, category=${currentCategory}, difficulty=${currentDifficulty}, keyword=${currentKeyword}, page=${questionPage.getCurrent() + 1})}">
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+
+    <div th:if="${#lists.isEmpty(questions)}" class="text-center py-5">
+        <i class="bi bi-inbox display-1 text-muted"></i>
+        <h5 class="text-muted mt-3">No questions found</h5>
+        <p class="text-muted">Start by adding questions to your question bank.</p>
+        <a th:href="@{/teacher/questions/create}" class="btn btn-primary">
+            <i class="bi bi-plus-circle me-2"></i>Add Your First Question
+        </a>
+    </div>
+
+    <div th:replace="fragments/footer :: footer-content"></div>
+</body>
+</html>

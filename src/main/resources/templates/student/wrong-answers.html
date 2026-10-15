@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" data-theme="auto">
+<head th:replace="fragments/header :: head"></head>
+<body>
+    <div th:replace="fragments/header :: header-content"></div>
+    <div th:replace="fragments/sidebar :: sidebar-content"></div>
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h5 class="mb-0"><i class="bi bi-journal-x me-2"></i>Wrong Answer Notebook</h5>
+        <span class="badge bg-warning fs-6" th:text="${#lists.size(wrongAnswers)} + ' unmastered'">0</span>
+    </div>
+
+    <div th:each="wa, iter : ${wrongAnswers}" class="card wrong-answer-card mb-3"
+         th:classappend="${wa.mastered == 1} ? 'opacity-50'">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div class="d-flex gap-2">
+                    <span class="badge bg-secondary" th:text="'#' + ${iter.count}">#1</span>
+                    <span class="badge bg-primary" th:text="${wa.question?.questionType}">TYPE</span>
+                    <span class="badge" th:classappend="${wa.question?.difficulty == 'EASY'} ? 'bg-success' : (${wa.question?.difficulty == 'MEDIUM'} ? 'bg-warning' : 'bg-danger')"
+                          th:text="${wa.question?.difficulty}">DIFF</span>
+                    <span class="badge bg-danger" th:text="'Wrong: ' + ${wa.wrongCount} + 'x'">Wrong: 1x</span>
+                    <span th:if="${wa.mastered == 1}" class="badge bg-success">Mastered</span>
+                </div>
+                <button th:if="${wa.mastered == 0}" class="btn btn-sm btn-outline-success"
+                        th:attr="onclick=|markMastered(${wa.id}, this)|">
+                    <i class="bi bi-check-lg me-1"></i>Mark Mastered
+                </button>
+            </div>
+
+            <p class="mb-2" th:text="${wa.question?.content}">Question</p>
+
+            <div th:if="${wa.question?.questionType != 'FILL_BLANK'}">
+                <div th:each="opt : ${wa.question?.getOptions()}" class="small mb-1"
+                     th:classappend="${opt.key.equalsIgnoreCase(wa.question?.correctAnswer)} ? 'text-success fw-bold' : ''">
+                    <span th:text="${opt.key + '. ' + opt.value}">Option</span>
+                    <i th:if="${opt.key.equalsIgnoreCase(wa.question?.correctAnswer)}" class="bi bi-check-lg text-success"></i>
+                </div>
+            </div>
+
+            <div class="mt-2 p-2 bg-danger-subtle rounded">
+                <small><strong>Your Wrong Answer:</strong> <span th:text="${wa.wrongAnswer}">wrong</span></small><br>
+                <small class="text-success"><strong>Correct Answer:</strong> <span th:text="${wa.question?.correctAnswer}">correct</span></small>
+            </div>
+
+            <div th:if="${wa.question?.explanation != null}" class="mt-2 p-2 bg-info-subtle rounded">
+                <small><strong>Explanation:</strong> <span th:text="${wa.question?.explanation}">explanation</span></small>
+            </div>
+
+            <div class="mt-1">
+                <small class="text-muted" th:text="'Last wrong: ' + ${#strings.substring(wa.lastWrongTime.toString(), 0, 16)}">date</small>
+            </div>
+        </div>
+    </div>
+
+    <div th:if="${#lists.isEmpty(wrongAnswers)}" class="text-center py-5">
+        <i class="bi bi-emoji-smile display-1 text-success"></i>
+        <h5 class="text-muted mt-3">No wrong answers!</h5>
+        <p class="text-muted">Great job! Keep up the good work.</p>
+    </div>
+
+    <div th:replace="fragments/footer :: footer-content"></div>
+
+    <script>
+        function markMastered(id, btn) {
+            fetch('/exam/student/wrong-answers/master/' + id, { method: 'POST' })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        btn.closest('.wrong-answer-card').classList.add('opacity-50');
+                        btn.outerHTML = '<span class="badge bg-success">Mastered</span>';
+                    }
+                });
+        }
+    </script>
+
+    <style>
+        .wrong-answer-card { transition: opacity 0.3s; }
+        .bg-danger-subtle { background: rgba(239,71,111,0.1); }
+        .bg-info-subtle { background: rgba(67,97,238,0.08); }
+        .bg-success-subtle { background: rgba(6,214,160,0.1); }
+    </style>
+</body>
+</html>

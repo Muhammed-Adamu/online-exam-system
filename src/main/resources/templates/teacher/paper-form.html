@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" data-theme="auto">
+<head th:replace="fragments/header :: head"></head>
+<body>
+    <div th:replace="fragments/header :: header-content"></div>
+    <div th:replace="fragments/sidebar :: sidebar-content"></div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi me-2" th:classappend="${paper.id != null} ? 'bi-pencil' : 'bi-file-earmark-plus'"></i>
+                        <span th:text="${paper.id != null} ? 'Edit Exam Paper' : 'Create Exam Paper'"></span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form th:action="${paper.id != null} ? @{/teacher/papers/edit/{id}(id=${paper.id})} : @{/teacher/papers/create}"
+                          method="post">
+                        <div class="mb-3">
+                            <label class="form-label">Exam Title <span class="text-danger">*</span></label>
+                            <input type="text" name="title" class="form-control" th:value="${paper.title}"
+                                   required placeholder="e.g., Java Midterm Exam">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <textarea name="description" class="form-control" rows="2"
+                                      placeholder="Brief description of the exam..."
+                                      th:text="${paper.description}"></textarea>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Total Score</label>
+                                <input type="number" name="totalScore" class="form-control" th:value="${paper.totalScore}"
+                                       step="0.5" min="1" placeholder="100">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Duration (minutes) <span class="text-danger">*</span></label>
+                                <input type="number" name="durationMinutes" class="form-control"
+                                       th:value="${paper.durationMinutes}" required min="1" placeholder="60">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Assembly Type</label>
+                                <select name="assemblyType" class="form-select">
+                                    <option value="MANUAL" th:selected="${paper.assemblyType == 'MANUAL'}">Manual</option>
+                                    <option value="RULE_BASED" th:selected="${paper.assemblyType == 'RULE_BASED'}">Rule-Based</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Start Time</label>
+                                <input type="datetime-local" name="startTime" class="form-control"
+                                       th:value="${paper.startTime}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">End Time</label>
+                                <input type="datetime-local" name="endTime" class="form-control"
+                                       th:value="${paper.endTime}">
+                            </div>
+                        </div>
+                        <div class="mt-4 d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-lg me-2"></i>
+                                <span th:text="${paper.id != null} ? 'Update Paper' : 'Create Paper'"></span>
+                            </button>
+                            <a th:href="@{/teacher/papers}" class="btn btn-secondary">
+                                <i class="bi bi-x-lg me-2"></i>Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div th:replace="fragments/footer :: footer-content"></div>
+</body>
+</html>

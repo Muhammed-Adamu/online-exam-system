@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" data-theme="auto">
+<head th:replace="fragments/header :: head"></head>
+<body>
+    <div class="exam-page">
+        <!-- Exam Header Bar -->
+        <nav class="navbar exam-navbar">
+            <div class="container-fluid">
+                <div>
+                    <h5 class="mb-0" th:text="${paper.title}">Exam Title</h5>
+                    <small class="text-muted" th:text="'Student: ' + ${session.loginUser?.realName}">Student Name</small>
+                </div>
+                <div class="d-flex align-items-center gap-3">
+                    <div class="text-center">
+                        <small class="text-muted d-block">Time Remaining</small>
+                        <span class="countdown-timer" id="countdownTimer">--:--</span>
+                    </div>
+                    <button class="btn btn-danger" onclick="submitExam()" id="submitBtn">
+                        <i class="bi bi-check-lg me-2"></i>Submit Exam
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Progress Bar -->
+        <div class="exam-progress">
+            <div class="container-fluid">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <small>Progress</small>
+                    <small><span id="answeredCount">0</span>/<span th:text="${#lists.size(paperQuestions)}">0</span> answered</small>
+                </div>
+                <div class="progress" style="height: 6px;">
+                    <div class="progress-bar" id="progressBar" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Question Navigation Sidebar -->
+        <div class="exam-layout">
+            <div class="question-nav-sidebar" id="questionNav">
+                <h6 class="text-center mb-3">Questions</h6>
+                <div class="question-nav-grid">
+                    <button th:each="pq, iter : ${paperQuestions}"
+                            class="question-nav-btn"
+                            th:id="'nav-q' + ${pq.questionId}"
+                            th:attr="onclick=|scrollToQuestion(${pq.questionId})|"
+                            th:text="${iter.count}">1</button>
+                </div>
+                <div class="mt-3 text-center">
+                    <small class="text-muted">
+                        <span class="legend-dot bg-success"></span> Answered
+                        <span class="legend-dot bg-secondary ms-2"></span> Unanswered
+                    </small>
+                </div>
+            </div>
+
+            <!-- Questions Area -->
+            <div class="questions-area" id="questionsArea">
+                <form id="examForm">
+                    <input type="hidden" id="recordId" th:value="${record.id}">
+
+                    <div th:each="pq, iter : ${paperQuestions}" class="question-block"
+                         th:id="'question-' + ${pq.questionId}">
+                        <div class="question-header">
+                            <span class="question-number" th:text="'Question ' + ${iter.count}">Q1</span>
+                            <span class="badge bg-primary ms-2" th:text="${pq.question?.questionType}">TYPE</span>
+                            <span class="badge ms-1" th:classappend="${pq.question?.difficulty == 'EASY'} ? 'bg-success' : (${pq.question?.difficulty == 'MEDIUM'} ? 'bg-warning' : 'bg-danger')"
+                                  th:text="${pq.question?.difficulty}">DIFF</span>
+                            <span class="badge bg-info ms-1" th:text="${pq.score + ' pts'}">score</span>
+                        </div>
+
+                        <div class="question-body">
+                            <p class="question-text" th:text="${pq.question?.content}">Question content</p>
+
+                            <!-- Single Choice / True-False Options -->
+                            <div th:if="${pq.question?.questionType == 'SINGLE_CHOICE' || pq.question?.questionType == 'TRUE_FALSE'}">
+                                <div class="form-check option-item" th:each="opt : ${pq.question?.getOptions()}">
+                                    <input class="form-check-input" type="radio"
+                                           th:name="'q_' + ${pq.questionId}"
+                                           th:value="${opt.key}"
+                                           th:id="'q' + ${pq.questionId} + '_' + ${opt.key}"
+                                           th:checked="${answerMap.get(pq.questionId) != null && answerMap.get(pq.questionId).equalsIgnoreCase(opt.key)}"
+                                           th:attr="onchange=|saveAnswer(${record.id}, ${pq.questionId}, '${opt.key}')|">
+                                    <label class="form-check-label" th:for="'q' + ${pq.questionId} + '_' + ${opt.key}">
+                                        <strong th:text="${opt.key} + '.'">A.</strong>
+                                        <span th:text="${opt.value}">Option</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Multiple Choice Options -->
+                            <div th:if="${pq.question?.questionType == 'MULTIPLE_CHOICE'}">
+                                <div class="form-check option-item" th:each="opt : ${pq.question?.getOptions()}">
+                                    <input class="form-check-input" type="checkbox"
+                                           th:name="'q_' + ${pq.questionId}"
+                                           th:value="${opt.key}"
+                                           th:id="'q' + ${pq.questionId} + '_' + ${opt.key}"
+                                           th:checked="${answerMap.get(pq.questionId) != null && answerMap.get(pq.questionId).toUpperCase().contains(opt.key)}"
+                                           th:attr="onchange=|saveMultiAnswer(${record.id}, ${pq.questionId})|">
+                                    <label class="form-check-label" th:for="'q' + ${pq.questionId} + '_' + ${opt.key}">
+                                        <strong th:text="${opt.key} + '.'">A.</strong>
+                                        <span th:text="${opt.value}">Option</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Fill in the Blank -->
+                            <div th:if="${pq.question?.questionType == 'FILL_BLANK'}">
+                                <input type="text" class="form-control"
+                                       th:name="'q_' + ${pq.questionId}"
+                                       th:id="'q' + ${pq.questionId} + '_input'"
+                                       th:value="${answerMap.get(pq.questionId)}"
+                                       placeholder="Type your answer here..."
+                                       th:attr="onchange=|saveAnswer(${record.id}, ${pq.questionId}, this.value)|">
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div th:replace="fragments/footer :: footer-content"></div>
+
+    <!-- Server-injected exam data -->
+    <span id="_durationMinutes" style="display:none" th:text="${paper.durationMinutes}">0</span>
+    <span id="_recordId" style="display:none" th:text="${record.id}">0</span>
+    <span id="_startTime" style="display:none" th:text="${record.startTime}">2024-01-01T00:00:00</span>
+    <span id="_questionCount" style="display:none" th:text="${#lists.size(paperQuestions)}">0</span>
+
+    <!-- Countdown Timer Script -->
+    <script>
+        var durationMinutes = parseInt(document.getElementById('_durationMinutes').textContent) || 0;
+        var recordId = parseInt(document.getElementById('_recordId').textContent) || 0;
+        var startTime = new Date(document.getElementById('_startTime').textContent).getTime();
+        var totalSeconds = durationMinutes * 60;
+
+        // Calculate elapsed time
+        var now = new Date().getTime();
+        var elapsed = Math.floor((now - startTime) / 1000);
+        var remainingSeconds = Math.max(0, totalSeconds - elapsed);
+
+        var answeredSet = new Set();
+        var paperQuestionCount = parseInt(document.getElementById('_questionCount').textContent) || 0;
+
+        // Pre-check answered questions
+        document.querySelectorAll('.question-block').forEach(function(block) {
+            var inputs = block.querySelectorAll('input[type="radio"]:checked, input[type="checkbox"]:checked');
+            var textInput = block.querySelector('input[type="text"]');
+            var qId = block.id.replace('question-', '');
+            if (inputs.length > 0 || (textInput && textInput.value.trim())) {
+                answeredSet.add(qId);
+            }
+        });
+        updateProgress();
+
+        function updateCountdown() {
+            if (remainingSeconds <= 0) {
+                document.getElementById('countdownTimer').textContent = '00:00';
+                autoSubmit();
+                return;
+            }
+            remainingSeconds--;
+            var mins = Math.floor(remainingSeconds / 60);
+            var secs = remainingSeconds % 60;
+            document.getElementById('countdownTimer').textContent =
+                String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
+
+            // Warning at 5 minutes
+            if (remainingSeconds <= 300 && remainingSeconds > 0) {
+                document.getElementById('countdownTimer').classList.add('warning');
+            }
+        }
+
+        // Initialize countdown display
+        updateCountdown();
+        setInterval(updateCountdown, 1000);
+
+        function saveAnswer(recordId, questionId, answer) {
+            fetch('/exam/student/exam/save-answer', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'recordId=' + recordId + '&questionId=' + questionId + '&answer=' + encodeURIComponent(answer)
+            }).then(function(r) { return r.json(); })
+              .then(function(data) {
+                  if (data.success) {
+                      answeredSet.add(String(questionId));
+                      updateProgress();
+                      markAnswered(questionId);
+                  }
+              });
+        }
+
+        function saveMultiAnswer(recordId, questionId) {
+            var checkboxes = document.querySelectorAll('input[name="q_' + questionId + '"]:checked');
+            var answers = [];
+            checkboxes.forEach(function(cb) { answers.push(cb.value); });
+            var answer = answers.join(',');
+            fetch('/exam/student/exam/save-answer', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'recordId=' + recordId + '&questionId=' + questionId + '&answer=' + encodeURIComponent(answer)
+            }).then(function(r) { return r.json(); })
+              .then(function(data) {
+                  if (data.success) {
+                      if (answers.length > 0) {
+                          answeredSet.add(String(questionId));
+                      } else {
+                          answeredSet.delete(String(questionId));
+                      }
+                      updateProgress();
+                      markAnswered(questionId);
+                  }
+              });
+        }
+
+        function updateProgress() {
+            var count = answeredSet.size;
+            document.getElementById('answeredCount').textContent = count;
+            var pct = paperQuestionCount > 0 ? Math.round((count / paperQuestionCount) * 100) : 0;
+            document.getElementById('progressBar').style.width = pct + '%';
+        }
+
+        function markAnswered(questionId) {
+            var navBtn = document.getElementById('nav-q' + questionId);
+            if (navBtn) {
+                if (answeredSet.has(String(questionId))) {
+                    navBtn.classList.add('answered');
+                } else {
+                    navBtn.classList.remove('answered');
+                }
+            }
+        }
+
+        function scrollToQuestion(questionId) {
+            var el = document.getElementById('question-' + questionId);
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function submitExam() {
+            if (!confirm('Are you sure you want to submit your exam? This cannot be undone.')) return;
+
+            var timeSpent = totalSeconds - remainingSeconds;
+            document.getElementById('submitBtn').disabled = true;
+            document.getElementById('submitBtn').innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Submitting...';
+
+            fetch('/exam/student/exam/submit', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'recordId=' + recordId + '&timeSpent=' + timeSpent
+            }).then(function(r) { return r.json(); })
+              .then(function(data) {
+                  if (data.success) {
+                      window.location.href = data.redirectUrl;
+                  } else {
+                      alert('Error: ' + data.message);
+                      document.getElementById('submitBtn').disabled = false;
+                      document.getElementById('submitBtn').innerHTML = '<i class="bi bi-check-lg me-2"></i>Submit Exam';
+                  }
+              });
+        }
+
+        function autoSubmit() {
+            alert('Time is up! Your exam will be auto-submitted.');
+            submitExam();
+        }
+
+        // ============================================
+        // Keyboard Shortcuts
+        // ============================================
+        var allQIds = [];
+        document.querySelectorAll('.question-block').forEach(function(b) {
+            allQIds.push(b.id.replace('question-', ''));
+        });
+        var currentQIdx = 0;
+
+        // Find which question is currently in view
+        function updateCurrentQuestion() {
+            var scrollY = window.scrollY;
+            var bestIdx = 0;
+            var bestDist = Infinity;
+            allQIds.forEach(function(qId, idx) {
+                var el = document.getElementById('question-' + qId);
+                if (el) {
+                    var dist = Math.abs(el.getBoundingClientRect().top - 100);
+                    if (dist < bestDist) { bestDist = dist; bestIdx = idx; }
+                }
+            });
+            currentQIdx = bestIdx;
+        }
+
+        window.addEventListener('scroll', function() {
+            updateCurrentQuestion();
+        });
+
+        document.addEventListener('keydown', function(e) {
+            // Ignore if user is typing in a text input
+            if (e.target.tagName === 'INPUT' && e.target.type === 'text') return;
+            if (e.target.tagName === 'TEXTAREA') return;
+
+            var currentQId = allQIds[currentQIdx];
+
+            switch(e.key.toUpperCase()) {
+                case 'A':
+                case 'B':
+                case 'C':
+                case 'D':
+                    e.preventDefault();
+                    if (currentQId) {
+                        // Try radio first
+                        var radio = document.getElementById('q' + currentQId + '_' + e.key.toUpperCase());
+                        if (radio && radio.type === 'radio') {
+                            radio.checked = true;
+                            radio.dispatchEvent(new Event('change', { bubbles: true }));
+                            markAnswered(currentQId);
+                            if (answeredSet) answeredSet.add(String(currentQId));
+                            updateProgress();
+                        }
+                        // Then checkbox
+                        if (radio && radio.type === 'checkbox') {
+                            radio.checked = !radio.checked;
+                            radio.dispatchEvent(new Event('change', { bubbles: true }));
+                            saveMultiAnswer(recordId, currentQId);
+                        }
+                    }
+                    break;
+
+                case 'ARROWDOWN':
+                case 'ARROWRIGHT':
+                case 'N':
+                    e.preventDefault();
+                    updateCurrentQuestion();
+                    if (currentQIdx < allQIds.length - 1) {
+                        currentQIdx++;
+                        var nextEl = document.getElementById('question-' + allQIds[currentQIdx]);
+                        if (nextEl) nextEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                    break;
+
+                case 'ARROWUP':
+                case 'ARROWLEFT':
+                case 'P':
+                    e.preventDefault();
+                    updateCurrentQuestion();
+                    if (currentQIdx > 0) {
+                        currentQIdx--;
+                        var prevEl = document.getElementById('question-' + allQIds[currentQIdx]);
+                        if (prevEl) prevEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                    break;
+
+                case 'S':
+                    if (e.ctrlKey || e.metaKey) {
+                        e.preventDefault();
+                        submitExam();
+                    }
+                    break;
+            }
+        });
+
+        // Show keyboard shortcuts hint
+        var shortcutHint = document.createElement('div');
+        shortcutHint.style.cssText = 'position:fixed;bottom:16px;right:16px;z-index:200;background:var(--bg-card);border:1px solid var(--border-color);border-radius:8px;padding:8px 14px;font-size:0.8rem;color:var(--text-secondary);box-shadow:var(--shadow-md);opacity:0.85;';
+        shortcutHint.innerHTML = '<i class="bi bi-keyboard me-2"></i><strong>Shortcuts:</strong> A-D Select | &#8593;&#8595; Navigate | Ctrl+S Submit';
+        document.body.appendChild(shortcutHint);
+        /*]]>*/
+    </script>
+
+    <style>
+        .exam-page { min-height: 100vh; background: var(--bg-primary); }
+        .exam-navbar {
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border-color);
+            padding: 0.75rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: var(--shadow-sm);
+        }
+        .countdown-timer {
+            font-size: 1.5rem;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+            color: var(--accent-color);
+        }
+        .countdown-timer.warning {
+            color: #ef476f;
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .exam-progress {
+            background: var(--bg-card);
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .exam-layout {
+            display: flex;
+            min-height: calc(100vh - 140px);
+        }
+        .question-nav-sidebar {
+            width: 200px;
+            background: var(--bg-card);
+            border-right: 1px solid var(--border-color);
+            padding: 1.5rem 1rem;
+            position: sticky;
+            top: 80px;
+            height: calc(100vh - 80px);
+            overflow-y: auto;
+        }
+        .question-nav-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.5rem;
+        }
+        .question-nav-btn {
+            width: 100%;
+            aspect-ratio: 1;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--bg-input);
+            color: var(--text-primary);
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .question-nav-btn:hover { border-color: var(--accent-color); }
+        .question-nav-btn.answered { background: var(--accent-color); color: white; border-color: var(--accent-color); }
+        .legend-dot {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 2px;
+        }
+        .questions-area {
+            flex: 1;
+            padding: 2rem;
+            max-width: 900px;
+        }
+        .question-block {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--shadow-sm);
+        }
+        .question-header {
+            margin-bottom: 1rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .question-number {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: var(--accent-color);
+        }
+        .question-text {
+            font-size: 1.05rem;
+            color: var(--text-primary);
+            margin-bottom: 1.25rem;
+            line-height: 1.6;
+        }
+        .option-item {
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .option-item:hover {
+            border-color: var(--accent-color);
+            background: var(--bg-hover);
+        }
+        .option-item:has(input:checked) {
+            border-color: var(--accent-color);
+            background: var(--accent-light);
+        }
+        .form-check-input:checked + .form-check-label {
+            color: var(--accent-color);
+            font-weight: 500;
+        }
+    </style>
+</body>
+</html>

@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" data-theme="auto">
+<head th:replace="fragments/header :: head"></head>
+<body>
+    <div th:replace="fragments/header :: header-content"></div>
+    <div th:replace="fragments/sidebar :: sidebar-content"></div>
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <a th:href="@{/teacher/papers/create}" class="btn btn-primary">
+            <i class="bi bi-file-earmark-plus me-2"></i>Create New Paper
+        </a>
+    </div>
+
+    <div class="row g-4">
+        <div th:each="paper : ${papers}" class="col-lg-6">
+            <div class="card paper-card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <h5 class="card-title mb-1" th:text="${paper.title}">Paper Title</h5>
+                            <p class="text-muted small mb-0" th:text="${paper.description}">Description</p>
+                        </div>
+                        <span class="badge fs-6" th:classappend="${paper.status == 'PUBLISHED'} ? 'bg-success' : (${paper.status == 'DRAFT'} ? 'bg-warning' : 'bg-secondary')"
+                              th:text="${paper.status}">Status</span>
+                    </div>
+
+                    <div class="paper-stats">
+                        <div class="row g-2 text-center">
+                            <div class="col-3">
+                                <div class="paper-stat-item">
+                                    <h6 th:text="${paper.questionCount}">0</h6>
+                                    <small class="text-muted">Questions</small>
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <div class="paper-stat-item">
+                                    <h6 th:text="${paper.totalScore}">0</h6>
+                                    <small class="text-muted">Total Score</small>
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <div class="paper-stat-item">
+                                    <h6 th:text="${paper.durationMinutes}">0</h6>
+                                    <small class="text-muted">Minutes</small>
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <div class="paper-stat-item">
+                                    <h6 th:text="${paper.assemblyType}">-</h6>
+                                    <small class="text-muted">Assembly</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-3 d-flex flex-wrap gap-2">
+                        <a th:href="@{/teacher/papers/questions/{id}(id=${paper.id})}"
+                           class="btn btn-sm btn-outline-info">
+                            <i class="bi bi-list-ul me-1"></i>Manage Questions
+                        </a>
+                        <a th:href="@{/teacher/papers/assemble/{id}(id=${paper.id})}"
+                           class="btn btn-sm btn-outline-secondary"
+                           th:attr="title=|Rule-based test assembly for '${paper.title}'|">
+                            <i class="bi bi-shuffle me-1"></i>Auto Assembly
+                        </a>
+                        <a th:href="@{/teacher/papers/edit/{id}(id=${paper.id})}"
+                           class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-pencil me-1"></i>Edit
+                        </a>
+                        <a th:if="${paper.status != 'PUBLISHED'}"
+                           th:href="@{/teacher/papers/publish/{id}(id=${paper.id})}"
+                           class="btn btn-sm btn-success confirm-link"
+                           th:attr="data-confirm=|Publish '${paper.title}'? Students will be able to take this exam.|"
+                           data-confirm-title="Publish Paper" data-confirm-class="btn-success">
+                            <i class="bi bi-send me-1"></i>Publish
+                        </a>
+                        <a th:if="${paper.status == 'PUBLISHED'}"
+                           th:href="@{/teacher/papers/close/{id}(id=${paper.id})}"
+                           class="btn btn-sm btn-warning confirm-link"
+                           th:attr="data-confirm=|Close '${paper.title}'? Students will no longer be able to access it.|"
+                           data-confirm-title="Close Paper" data-confirm-class="btn-warning">
+                            <i class="bi bi-x-circle me-1"></i>Close
+                        </a>
+                        <a th:href="@{/teacher/papers/delete/{id}(id=${paper.id})}"
+                           class="btn btn-sm btn-outline-danger confirm-link"
+                           th:attr="data-confirm=|Delete '${paper.title}'? This action cannot be undone.|"
+                           data-confirm-title="Delete Paper">
+                            <i class="bi bi-trash me-1"></i>Delete
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div th:if="${#lists.isEmpty(papers)}" class="col-12 text-center py-5">
+            <i class="bi bi-file-earmark-text display-1 text-muted"></i>
+            <h5 class="text-muted mt-3">No exam papers yet</h5>
+            <p class="text-muted">Create your first exam paper to get started.</p>
+            <a th:href="@{/teacher/papers/create}" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-2"></i>Create Exam Paper
+            </a>
+        </div>
+    </div>
+
+    <div th:replace="fragments/footer :: footer-content"></div>
+</body>
+</html>

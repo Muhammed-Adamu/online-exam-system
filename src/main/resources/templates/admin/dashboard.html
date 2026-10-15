@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" data-theme="auto">
+<head th:replace="fragments/header :: head"></head>
+<body>
+    <div th:replace="fragments/header :: header-content"></div>
+    <div th:replace="fragments/sidebar :: sidebar-content"></div>
+
+    <!-- Top Stat Cards Row -->
+    <div class="row g-3 mb-3">
+        <div class="col-xl-2 col-md-4 col-6">
+            <div class="stat-card">
+                <div class="stat-icon bg-primary-subtle text-primary"><i class="bi bi-people-fill"></i></div>
+                <div class="stat-info"><h3 th:text="${stats.totalUsers}">0</h3><p>Total Users</p></div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 col-6">
+            <div class="stat-card">
+                <div class="stat-icon bg-success-subtle text-success"><i class="bi bi-person-badge"></i></div>
+                <div class="stat-info"><h3 th:text="${stats.totalTeachers}">0</h3><p>Teachers</p></div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 col-6">
+            <div class="stat-card">
+                <div class="stat-icon bg-info-subtle text-info"><i class="bi bi-mortarboard"></i></div>
+                <div class="stat-info"><h3 th:text="${stats.totalStudents}">0</h3><p>Students</p></div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 col-6">
+            <div class="stat-card">
+                <div class="stat-icon bg-warning-subtle text-warning"><i class="bi bi-journal-text"></i></div>
+                <div class="stat-info"><h3 th:text="${stats.totalQuestions}">0</h3><p>Questions</p></div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 col-6">
+            <div class="stat-card">
+                <div class="stat-icon" style="background:rgba(6,214,160,0.1);color:#06d6a0;"><i class="bi bi-file-earmark-text"></i></div>
+                <div class="stat-info"><h3 th:text="${stats.totalPapers}">0</h3><p>Papers</p></div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 col-6">
+            <div class="stat-card">
+                <div class="stat-icon" style="background:rgba(247,37,133,0.1);color:#f72585;"><i class="bi bi-graph-up-arrow"></i></div>
+                <div class="stat-info">
+                    <h3 th:text="${todayStats.todaySubmissions}">0</h3>
+                    <p>Today's Subs</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Charts -->
+        <div class="col-lg-5">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="bi bi-pie-chart me-2"></i>User Distribution</h5>
+                </div>
+                <div class="card-body"><div id="userChart" style="height: 320px;"></div></div>
+            </div>
+        </div>
+        <div class="col-lg-7">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="bi bi-bar-chart me-2"></i>System Overview</h5>
+                </div>
+                <div class="card-body"><div id="overviewChart" style="height: 320px;"></div></div>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="col-lg-5">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0"><i class="bi bi-clock-history me-2"></i>Recent Activity</h5>
+                    <a th:href="@{/admin/users}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body p-0">
+                    <div th:if="${#lists.isEmpty(recentActivity)}" class="text-center py-4 text-muted">
+                        <i class="bi bi-inbox display-5 d-block mb-2 opacity-25"></i>No recent activity
+                    </div>
+                    <div th:each="act : ${recentActivity}" class="p-3 border-bottom" style="border-color:var(--border-light)!important;">
+                        <div class="d-flex align-items-start gap-3">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                                 th:classappend="${act.actor_role == 'TEACHER'} ? 'bg-success-subtle text-success' : (${act.actor_role == 'ADMIN'} ? 'bg-primary-subtle text-primary' : 'bg-info-subtle text-info')"
+                                 style="width:36px;height:36px;font-size:0.85rem;">
+                                <i class="bi" th:classappend="${act.activity_type == 'REGISTRATION'} ? 'bi-person-plus' : 'bi-file-earmark-check'"></i>
+                            </div>
+                            <div class="flex-grow-1 min-w-0">
+                                <div class="small">
+                                    <strong th:text="${act.actor_name}">Name</strong>
+                                    <span class="text-muted" th:text="${act.activity_type == 'REGISTRATION'} ? 'registered as ' + ${act.actor_role} : 'submitted exam'">action</span>
+                                </div>
+                                <div class="small text-muted text-truncate" th:text="${act.detail}">detail</div>
+                            </div>
+                            <small class="text-muted flex-shrink-0" th:text="${#temporals.format(act.activity_time, 'MM-dd HH:mm')}">time</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- All Papers Overview -->
+        <div class="col-lg-7">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0"><i class="bi bi-file-earmark-text me-2"></i>All Exam Papers</h5>
+                    <a th:href="@{/admin/papers}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Creator</th>
+                                    <th>Status</th>
+                                    <th>Q's</th>
+                                    <th>Attempts</th>
+                                    <th>Created</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="paper : ${allPapers}" th:if="${!allPapers.isEmpty()}">
+                                    <td><strong th:text="${paper.title}">Title</strong></td>
+                                    <td th:text="${paper.creatorName}">Creator</td>
+                                    <td>
+                                        <span class="badge"
+                                              th:classappend="${paper.status == 'PUBLISHED'} ? 'bg-success' : (${paper.status == 'DRAFT'} ? 'bg-warning' : 'bg-secondary')"
+                                              th:text="${paper.status}">Status</span>
+                                    </td>
+                                    <td th:text="${paper.questionCount}">0</td>
+                                    <td th:text="${paper.attemptCount}">0</td>
+                                    <td><small th:text="${#temporals.format(paper.createdAt, 'yyyy-MM-dd')}">date</small></td>
+                                </tr>
+                                <tr th:if="${allPapers.isEmpty()}">
+                                    <td colspan="6" class="text-center py-3 text-muted">No exam papers yet.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="bi bi-lightning-charge me-2"></i>Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex flex-wrap gap-2">
+                        <a th:href="@{/admin/users}" class="btn btn-primary">
+                            <i class="bi bi-people me-2"></i>Manage Users
+                        </a>
+                        <a th:href="@{/admin/users/create}" class="btn btn-success">
+                            <i class="bi bi-person-plus me-2"></i>Add User
+                        </a>
+                        <a th:href="@{/admin/papers}" class="btn btn-info text-white">
+                            <i class="bi bi-file-earmark-text me-2"></i>View All Papers
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div th:replace="fragments/footer :: footer-content"></div>
+
+    <!-- Server data for charts -->
+    <span id="_totalAdmins" style="display:none" th:text="${stats.totalAdmins}">0</span>
+    <span id="_totalTeachers" style="display:none" th:text="${stats.totalTeachers}">0</span>
+    <span id="_totalStudents" style="display:none" th:text="${stats.totalStudents}">0</span>
+    <span id="_totalQuestions" style="display:none" th:text="${stats.totalQuestions}">0</span>
+    <span id="_totalPapers" style="display:none" th:text="${stats.totalPapers}">0</span>
+
+    <script>
+        var totalAdmins = parseInt(document.getElementById('_totalAdmins').textContent) || 0;
+        var totalTeachers = parseInt(document.getElementById('_totalTeachers').textContent) || 0;
+        var totalStudents = parseInt(document.getElementById('_totalStudents').textContent) || 0;
+        var totalQuestions = parseInt(document.getElementById('_totalQuestions').textContent) || 0;
+        var totalPapers = parseInt(document.getElementById('_totalPapers').textContent) || 0;
+
+        var userChart = echarts.init(document.getElementById('userChart'));
+        userChart.setOption({
+            tooltip: { trigger: 'item' },
+            legend: { bottom: '0%' },
+            series: [{
+                name: 'Users', type: 'pie', radius: ['40%', '70%'],
+                avoidLabelOverlap: false,
+                itemStyle: { borderRadius: 10, borderColor: 'var(--bg-card)', borderWidth: 2 },
+                label: { show: false },
+                emphasis: { label: { show: true, fontSize: 16, fontWeight: 'bold' } },
+                data: [
+                    { value: totalAdmins, name: 'Admins', itemStyle: { color: '#4361ee' } },
+                    { value: totalTeachers, name: 'Teachers', itemStyle: { color: '#2ec4b6' } },
+                    { value: totalStudents, name: 'Students', itemStyle: { color: '#f72585' } }
+                ]
+            }]
+        });
+
+        var overviewChart = echarts.init(document.getElementById('overviewChart'));
+        overviewChart.setOption({
+            tooltip: { trigger: 'axis' },
+            xAxis: { type: 'category', data: ['Admins', 'Teachers', 'Students', 'Questions', 'Papers'] },
+            yAxis: { type: 'value' },
+            series: [{
+                data: [totalAdmins, totalTeachers, totalStudents, totalQuestions, totalPapers],
+                type: 'bar',
+                itemStyle: {
+                    color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                        { offset: 0, color: '#4361ee' }, { offset: 1, color: '#3a0ca3' }
+                    ]),
+                    borderRadius: [8, 8, 0, 0]
+                }
+            }]
+        });
+
+        window.addEventListener('resize', function() { userChart.resize(); overviewChart.resize(); });
+    </script>
+</body>
+</html>

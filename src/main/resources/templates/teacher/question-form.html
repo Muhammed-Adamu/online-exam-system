@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" data-theme="auto">
+<head th:replace="fragments/header :: head"></head>
+<body>
+    <div th:replace="fragments/header :: header-content"></div>
+    <div th:replace="fragments/sidebar :: sidebar-content"></div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi me-2" th:classappend="${question.id != null} ? 'bi-pencil' : 'bi-plus-circle'"></i>
+                        <span th:text="${question.id != null} ? 'Edit Question' : 'Add New Question'"></span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form th:action="${question.id != null} ? @{/teacher/questions/edit/{id}(id=${question.id})} : @{/teacher/questions/create}"
+                          method="post" id="questionForm">
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label class="form-label">Question Type <span class="text-danger">*</span></label>
+                                <select name="questionType" class="form-select" id="questionType" required
+                                        onchange="handleTypeChange()">
+                                    <option value="SINGLE_CHOICE" th:selected="${question.questionType == 'SINGLE_CHOICE'}">Single Choice</option>
+                                    <option value="MULTIPLE_CHOICE" th:selected="${question.questionType == 'MULTIPLE_CHOICE'}">Multiple Choice</option>
+                                    <option value="TRUE_FALSE" th:selected="${question.questionType == 'TRUE_FALSE'}">True/False</option>
+                                    <option value="FILL_BLANK" th:selected="${question.questionType == 'FILL_BLANK'}">Fill in the Blank</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Category <span class="text-danger">*</span></label>
+                                <input type="text" name="category" class="form-control" th:value="${question.category}"
+                                       list="categoryList" required placeholder="e.g., Java Basics">
+                                <datalist id="categoryList">
+                                    <option th:each="cat : ${categories}" th:value="${cat}">
+                                </datalist>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Difficulty <span class="text-danger">*</span></label>
+                                <select name="difficulty" class="form-select" required>
+                                    <option value="EASY" th:selected="${question.difficulty == 'EASY'}">Easy</option>
+                                    <option value="MEDIUM" th:selected="${question.difficulty == 'MEDIUM'}">Medium</option>
+                                    <option value="HARD" th:selected="${question.difficulty == 'HARD'}">Hard</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Score <span class="text-danger">*</span></label>
+                                <input type="number" name="score" class="form-control" th:value="${question.score}"
+                                       step="0.5" min="1" max="100" required placeholder="5">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Question Content <span class="text-danger">*</span></label>
+                                <textarea name="content" class="form-control" rows="3" required
+                                          placeholder="Enter question stem..."
+                                          th:text="${question.content}">Question content</textarea>
+                            </div>
+                        </div>
+
+                        <!-- Options Section (hidden for fill-in-blank) -->
+                        <div id="optionsSection" class="mt-4">
+                            <h6 class="fw-semibold mb-3">Options</h6>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Option A</label>
+                                    <input type="text" name="optionA" class="form-control" th:value="${question.optionA}"
+                                           placeholder="Option A">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Option B</label>
+                                    <input type="text" name="optionB" class="form-control" th:value="${question.optionB}"
+                                           placeholder="Option B">
+                                </div>
+                                <div class="col-md-6" id="optionCGroup">
+                                    <label class="form-label">Option C</label>
+                                    <input type="text" name="optionC" class="form-control" th:value="${question.optionC}"
+                                           placeholder="Option C">
+                                </div>
+                                <div class="col-md-6" id="optionDGroup">
+                                    <label class="form-label">Option D</label>
+                                    <input type="text" name="optionD" class="form-control" th:value="${question.optionD}"
+                                           placeholder="Option D">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mt-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Correct Answer <span class="text-danger">*</span></label>
+                                <input type="text" name="correctAnswer" class="form-control" th:value="${question.correctAnswer}"
+                                       required placeholder="e.g., A (or A,C for multiple choice, or keyword for fill-blank)">
+                                <small class="text-muted">
+                                    Single choice: A/B/C/D | Multiple: A,C | True/False: True/False | Fill-blank: keyword
+                                </small>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Explanation</label>
+                                <textarea name="explanation" class="form-control" rows="3"
+                                          placeholder="Explain why this is the correct answer..."
+                                          th:text="${question.explanation}">Explanation</textarea>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-lg me-2"></i>
+                                <span th:text="${question.id != null} ? 'Update Question' : 'Save Question'"></span>
+                            </button>
+                            <a th:href="@{/teacher/questions}" class="btn btn-secondary">
+                                <i class="bi bi-x-lg me-2"></i>Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div th:replace="fragments/footer :: footer-content"></div>
+
+    <script>
+        function handleTypeChange() {
+            var type = document.getElementById('questionType').value;
+            var optionsSection = document.getElementById('optionsSection');
+            var optionCGroup = document.getElementById('optionCGroup');
+            var optionDGroup = document.getElementById('optionDGroup');
+
+            if (type === 'FILL_BLANK') {
+                optionsSection.style.display = 'none';
+            } else {
+                optionsSection.style.display = 'block';
+                if (type === 'TRUE_FALSE') {
+                    optionCGroup.style.display = 'none';
+                    optionDGroup.style.display = 'none';
+                } else {
+                    optionCGroup.style.display = 'block';
+                    optionDGroup.style.display = 'block';
+                }
+            }
+        }
+        // Initialize on load
+        handleTypeChange();
+    </script>
+</body>
+</html>

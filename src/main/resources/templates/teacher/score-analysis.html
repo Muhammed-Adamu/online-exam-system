@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" data-theme="auto">
+<head th:replace="fragments/header :: head"></head>
+<body>
+    <div th:replace="fragments/header :: header-content"></div>
+    <div th:replace="fragments/sidebar :: sidebar-content"></div>
+
+    <!-- Paper Selection -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-5">
+                    <label class="form-label">Select Exam Paper</label>
+                    <select class="form-select" id="paperSelect" onchange="loadPaperStats(this.value)">
+                        <option value="">-- Select a paper --</option>
+                        <option th:each="paper : ${papers}" th:value="${paper.id}"
+                                th:text="${paper.title} + ' (' + ${paper.status} + ')'">Paper</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Or Select Class</label>
+                    <select class="form-select" id="classSelect" onchange="loadClassStats(this.value)">
+                        <option value="">-- Select a class --</option>
+                        <option th:each="cls : ${classes}" th:value="${cls}" th:text="${cls}">Class</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Content -->
+    <div id="statsContent">
+        <!-- Score Overview Cards -->
+        <div class="row g-4 mb-4 d-none" id="statsCards">
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-icon bg-primary-subtle text-primary"><i class="bi bi-people"></i></div>
+                    <div class="stat-info"><h3 id="totalAttempts">0</h3><p>Total Attempts</p></div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-icon bg-success-subtle text-success"><i class="bi bi-graph-up"></i></div>
+                    <div class="stat-info"><h3 id="avgScore">0</h3><p>Average Score</p></div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-icon bg-warning-subtle text-warning"><i class="bi bi-trophy"></i></div>
+                    <div class="stat-info"><h3 id="highestScore">0</h3><p>Highest Score</p></div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-icon bg-danger-subtle text-danger"><i class="bi bi-arrow-down"></i></div>
+                    <div class="stat-info"><h3 id="lowestScore">0</h3><p>Lowest Score</p></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="row g-4 mb-4">
+            <div class="col-lg-6"><div class="card"><div class="card-header">
+                <h6 class="card-title mb-0"><i class="bi bi-pie-chart me-2"></i>Score Distribution</h6></div>
+                <div class="card-body"><div id="distributionChart" style="height: 350px;"></div></div>
+            </div></div>
+            <div class="col-lg-6"><div class="card"><div class="card-header">
+                <h6 class="card-title mb-0"><i class="bi bi-bar-chart me-2"></i>Question Correct Rates</h6></div>
+                <div class="card-body"><div id="correctRateChart" style="height: 350px;"></div></div>
+            </div></div>
+        </div>
+
+        <!-- Student Scores Table -->
+        <div class="card d-none" id="scoresTable">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="card-title mb-0"><i class="bi bi-table me-2"></i>Student Scores</h6>
+                <a id="exportBtn" href="#" class="btn btn-sm btn-outline-success d-none">
+                    <i class="bi bi-download me-1"></i>Export Excel
+                </a>
+            </div>
+            <div class="card-body p-0"><div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead><tr>
+                        <th>Student</th><th>Time Spent</th><th>Score</th><th>Status</th><th>Submitted</th><th></th>
+                    </tr></thead>
+                    <tbody id="scoresTableBody"></tbody>
+                </table>
+            </div></div>
+        </div>
+    </div>
+
+    <div class="text-center py-5 d-none" id="emptyState">
+        <i class="bi bi-bar-chart display-1 text-muted"></i>
+        <h5 class="text-muted mt-3">Select a paper or class to view statistics</h5>
+    </div>
+
+    <div th:replace="fragments/footer :: footer-content"></div>
+
+    <script>
+        var distChart = echarts.init(document.getElementById('distributionChart'));
+        var rateChart = echarts.init(document.getElementById('correctRateChart'));
+
+        // Auto-select paper if provided via query parameter (e.g., from notification)
+        var selectedPaperId = /*[[${selectedPaperId}]]*/ null;
+        if (selectedPaperId) {
+            document.addEventListener('DOMContentLoaded', function() {
+                var select = document.getElementById('paperSelect');
+                if (select) {
+                    select.value = selectedPaperId.toString();
+                    loadPaperStats(selectedPaperId);
+                }
+            });
+        }
+
+        function loadPaperStats(paperId) {
+            if (!paperId) return;
+            // Set export button href
+            var exportBtn = document.getElementById('exportBtn');
+            if (exportBtn) {
+                exportBtn.href = '/exam/teacher/analysis/export/' + paperId;
+                exportBtn.classList.remove('d-none');
+            }
+            fetch('/exam/teacher/analysis/paper/' + paperId)
+                .then(r => r.json())
+                .then(data => {
+                    document.getElementById('statsCards').classList.remove('d-none');
+                    document.getElementById('scoresTable').classList.remove('d-none');
+                    document.getElementById('emptyState').classList.add('d-none');
+
+                    var stats = data.statistics;
+                    document.getElementById('totalAttempts').textContent = stats.totalAttempts || 0;
+                    document.getElementById('avgScore').textContent = stats.averageScore || '0';
+                    document.getElementById('highestScore').textContent = stats.highestScore || '0';
+                    document.getElementById('lowestScore').textContent = stats.lowestScore || '0';
+
+                    // Score distribution pie chart
+                    var dist = stats.distribution || {};
+                    distChart.setOption({
+                        tooltip: { trigger: 'item' },
+                        series: [{
+                            type: 'pie', radius: ['45%', '75%'],
+                            data: [
+                                { value: dist['Excellent (90-100)']||0, name: 'Excellent (90-100)', itemStyle: { color: '#06d6a0' } },
+                                { value: dist['Good (80-89)']||0, name: 'Good (80-89)', itemStyle: { color: '#118ab2' } },
+                                { value: dist['Average (70-79)']||0, name: 'Average (70-79)', itemStyle: { color: '#ffd166' } },
+                                { value: dist['Pass (60-69)']||0, name: 'Pass (60-69)', itemStyle: { color: '#f4a261' } },
+                                { value: dist['Fail (<60)']||0, name: 'Fail (<60)', itemStyle: { color: '#ef476f' } }
+                            ]
+                        }]
+                    });
+
+                    // Question correct rates bar chart
+                    var rates = data.correctRates || [];
+                    rateChart.setOption({
+                        tooltip: { trigger: 'axis' },
+                        xAxis: {
+                            type: 'category',
+                            data: rates.map(function(r) { return 'Q' + r.questionId; }),
+                            axisLabel: { rotate: 45 }
+                        },
+                        yAxis: { type: 'value', max: 100, axisLabel: { formatter: '{value}%' } },
+                        series: [{
+                            data: rates.map(function(r) { return r.correctRate || 0; }),
+                            type: 'bar',
+                            itemStyle: {
+                                color: function(p) {
+                                    return p.value >= 70 ? '#06d6a0' : p.value >= 40 ? '#ffd166' : '#ef476f';
+                                },
+                                borderRadius: [6,6,0,0]
+                            }
+                        }]
+                    });
+
+                    // Scores table
+                    var tbody = document.getElementById('scoresTableBody');
+                    tbody.innerHTML = '';
+                    (data.records || []).forEach(function(r) {
+                        var tr = document.createElement('tr');
+                        tr.innerHTML = '<td><strong>' + (r.studentName || 'N/A') + '</strong>' +
+                            '<br><small class="text-muted">ID: ' + (r.studentId || '-') + '</small></td>' +
+                            '<td>' + (r.timeSpentSeconds ? Math.floor(r.timeSpentSeconds/60) + ' min' : '-') + '</td>' +
+                            '<td><strong>' + (r.totalScore || '-') + '</strong></td>' +
+                            '<td><span class="badge ' + (r.status === 'GRADED' ? 'bg-success' : 'bg-warning') + '">' + r.status + '</span></td>' +
+                            '<td><small>' + (r.submitTime || '-') + '</small></td>' +
+                            '<td><button class="btn btn-sm btn-outline-info" title="Send Notice" ' +
+                            'onclick="openNoticeModal(' + r.studentId + ', \'' + (r.studentName || '').replace(/'/g, "\\'") + '\')">' +
+                            '<i class="bi bi-send"></i></button></td>';
+                        tbody.appendChild(tr);
+                    });
+                });
+        }
+
+        function loadClassStats(className) {
+            if (!className) return;
+            fetch('/exam/teacher/analysis/class?className=' + encodeURIComponent(className))
+                .then(r => r.json())
+                .then(data => {
+                    document.getElementById('statsCards').classList.remove('d-none');
+                    document.getElementById('scoresTable').classList.remove('d-none');
+
+                    var tbody = document.getElementById('scoresTableBody');
+                    tbody.innerHTML = '';
+                    data.forEach(function(s) {
+                        var tr = document.createElement('tr');
+                        tr.innerHTML = '<td>' + s.studentName + '</td>' +
+                            '<td>' + s.examsTaken + ' exams</td>' +
+                            '<td><strong>' + s.averageScore + '</strong> (avg)</td>' +
+                            '<td>-</td><td>-</td>';
+                        tbody.appendChild(tr);
+                    });
+                });
+        }
+
+        window.addEventListener('resize', function() { distChart.resize(); rateChart.resize(); });
+
+        // ============================================
+        // Send Notice to Student
+        // ============================================
+        var noticeStudentId = null;
+        var noticeStudentName = '';
+
+        function openNoticeModal(studentId, studentName) {
+            noticeStudentId = studentId;
+            noticeStudentName = studentName;
+            document.getElementById('noticeRecipientName').textContent = studentName;
+            document.getElementById('noticeMessage').value = '';
+            var modal = new bootstrap.Modal(document.getElementById('noticeModal'));
+            modal.show();
+        }
+
+        function sendNotice() {
+            var message = document.getElementById('noticeMessage').value.trim();
+            if (!message) {
+                window.showToast('Please enter a message.', 'warning');
+                return;
+            }
+            var btn = document.getElementById('sendNoticeBtn');
+            window.showLoading(btn);
+            fetch(ctxPath + '/teacher/notices/send', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'studentId=' + noticeStudentId + '&message=' + encodeURIComponent(message)
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                window.hideLoading(btn);
+                if (data.success) {
+                    window.showToast('Notice sent to ' + noticeStudentName + '!', 'success');
+                    bootstrap.Modal.getInstance(document.getElementById('noticeModal')).hide();
+                } else {
+                    window.showToast(data.message || 'Failed to send notice.', 'error');
+                }
+            })
+            .catch(function() {
+                window.hideLoading(btn);
+                window.showToast('Network error.', 'error');
+            });
+        }
+    </script>
+
+    <!-- Notice Modal -->
+    <div class="modal fade" id="noticeModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-send me-2"></i>Send Notice</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-3">To: <strong id="noticeRecipientName">Student</strong></p>
+                    <label class="form-label">Message</label>
+                    <textarea id="noticeMessage" class="form-control" rows="3"
+                              placeholder="Enter your message..."></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="sendNoticeBtn" onclick="sendNotice()">
+                        <i class="bi bi-send me-1"></i> Send
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

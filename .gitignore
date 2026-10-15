@@ -1,0 +1,51 @@
+# ============================================
+# Build output
+# ============================================
+target/
+*.jar
+*.war
+!.mvn/wrapper/maven-wrapper.jar
+
+# ============================================
+# Logs
+# ============================================
+logs/
+*.log
+*.log.gz
+
+# ============================================
+# Secrets - NEVER commit these
+# ============================================
+.env
+*.env
+application-local.properties
+application-secret.properties
+
+# Claude Code local settings (contains a credential allowlist)
+.claude/settings.local.json
+
+# ============================================
+# IDE
+# ============================================
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.classpath
+.project
+.settings/
+
+# ============================================
+# OS
+# ============================================
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# ============================================
+# Coursework media (kept on disk, not in the repo)
+# ============================================
+*.mp4
+*.pptx
+*.docx

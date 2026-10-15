@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" data-theme="auto">
+<head th:replace="fragments/header :: head"></head>
+<body>
+    <div th:replace="fragments/header :: header-content"></div>
+    <div th:replace="fragments/sidebar :: sidebar-content"></div>
+
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title mb-0"><i class="bi bi-trophy me-2"></i>My Scores</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead><tr>
+                        <th>#</th><th>Exam</th><th>Status</th><th>Score</th>
+                        <th>Time Spent</th><th>Date</th><th>Action</th>
+                    </tr></thead>
+                    <tbody>
+                        <tr th:each="record, iter : ${records}">
+                            <td th:text="${iter.count}">1</td>
+                            <td><strong th:text="${record.paperTitle}">Title</strong></td>
+                            <td>
+                                <span class="badge" th:classappend="${record.status == 'GRADED'} ? 'bg-success' : (${record.status == 'IN_PROGRESS'} ? 'bg-warning' : 'bg-info')"
+                                      th:text="${record.status}">Status</span>
+                            </td>
+                            <td>
+                                <strong th:text="${record.totalScore != null ? record.totalScore : '-'}">-</strong>
+                            </td>
+                            <td th:text="${record.timeSpentSeconds != null ? (record.timeSpentSeconds / 60) + ' min' : '-'}">-</td>
+                            <td th:text="${record.submitTime != null ? #strings.substring(record.submitTime.toString(), 0, 16) : #strings.substring(record.startTime.toString(), 0, 16)}">Date</td>
+                            <td>
+                                <a th:if="${record.status == 'IN_PROGRESS'}"
+                                   th:href="@{/student/exam/take/{id}(id=${record.id})}"
+                                   class="btn btn-sm btn-warning">Continue</a>
+                                <a th:if="${record.status != 'IN_PROGRESS'}"
+                                   th:href="@{/student/exam/result/{id}(id=${record.id})}"
+                                   class="btn btn-sm btn-outline-info">
+                                    <i class="bi bi-eye"></i> View
+                                </a>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(records)}">
+                            <td colspan="7" class="text-center py-5 text-muted">
+                                <i class="bi bi-inbox display-4 d-block mb-3"></i>
+                                No scores yet. Take an exam to see results here.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div th:replace="fragments/footer :: footer-content"></div>
+</body>
+</html>

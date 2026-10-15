@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" data-theme="auto">
+<head th:replace="fragments/header :: head"></head>
+<body>
+    <div th:replace="fragments/header :: header-content"></div>
+    <div th:replace="fragments/sidebar :: sidebar-content"></div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-7">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="bi bi-file-earmark-arrow-up me-2"></i>Bulk Import Users</h5>
+                </div>
+                <div class="card-body">
+                    <form th:action="@{/admin/users/import}" method="post" enctype="multipart/form-data">
+                        <div class="mb-4">
+                            <label class="form-label">Select Excel File (.xlsx)</label>
+                            <input type="file" name="file" class="form-control" accept=".xlsx" required>
+                        </div>
+
+                        <div class="card bg-light-subtle p-3 mb-4">
+                            <h6 class="mb-2"><i class="bi bi-info-circle me-2"></i>Expected Columns</h6>
+                            <table class="table table-sm table-borderless mb-0 small">
+                                <thead><tr><th>Column</th><th>Required</th><th>Example</th></tr></thead>
+                                <tbody>
+                                    <tr><td>A: username</td><td class="text-danger">Yes</td><td>john_doe</td></tr>
+                                    <tr><td>B: password</td><td class="text-danger">Yes</td><td>pass123</td></tr>
+                                    <tr><td>C: real_name</td><td class="text-danger">Yes</td><td>John Doe</td></tr>
+                                    <tr><td>D: role</td><td class="text-danger">Yes</td><td>STUDENT / TEACHER / ADMIN</td></tr>
+                                    <tr><td>E: email</td><td>Optional</td><td>john@school.edu</td></tr>
+                                    <tr><td>F: phone</td><td>Optional</td><td>1234567890</td></tr>
+                                    <tr><td>G: class_name</td><td>Optional</td><td>CS2024-A</td></tr>
+                                </tbody>
+                            </table>
+                            <small class="text-muted">Row 1 is the header (skipped). Existing usernames are skipped.</small>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-upload me-2"></i>Upload & Import
+                            </button>
+                            <a th:href="@{/admin/users}" class="btn btn-secondary">
+                                <i class="bi bi-x-lg me-2"></i>Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div th:replace="fragments/footer :: footer-content"></div>
+</body>
+</html>

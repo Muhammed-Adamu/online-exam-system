@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" data-theme="auto">
+<head th:replace="fragments/header :: head"></head>
+<body>
+    <div th:replace="fragments/header :: header-content"></div>
+    <div th:replace="fragments/sidebar :: sidebar-content"></div>
+
+    <div class="row g-4">
+        <!-- Teacher Stats -->
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card">
+                <div class="stat-icon bg-primary-subtle text-primary"><i class="bi bi-file-earmark-text"></i></div>
+                <div class="stat-info"><h3 th:text="${stats.totalPapers}">0</h3><p>My Papers</p></div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card">
+                <div class="stat-icon bg-success-subtle text-success"><i class="bi bi-check-circle"></i></div>
+                <div class="stat-info"><h3 th:text="${stats.publishedPapers}">0</h3><p>Published</p></div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card">
+                <div class="stat-icon bg-info-subtle text-info"><i class="bi bi-journal-text"></i></div>
+                <div class="stat-info"><h3 th:text="${stats.totalQuestions}">0</h3><p>Question Bank</p></div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card">
+                <div class="stat-icon bg-warning-subtle text-warning"><i class="bi bi-mortarboard"></i></div>
+                <div class="stat-info"><h3 th:text="${stats.totalStudents}">0</h3><p>Students</p></div>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header"><h5 class="card-title mb-0"><i class="bi bi-pie-chart me-2"></i>Question Type Distribution</h5></div>
+                <div class="card-body"><div id="questionTypeChart" style="height: 350px;"></div></div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header"><h5 class="card-title mb-0"><i class="bi bi-bar-chart me-2"></i>Difficulty Distribution</h5></div>
+                <div class="card-body"><div id="difficultyChart" style="height: 350px;"></div></div>
+            </div>
+        </div>
+
+        <!-- Recent Submissions -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0"><i class="bi bi-clock-history me-2"></i>Recent Submissions</h5>
+                    <a th:href="@{/teacher/analysis}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body p-0">
+                    <div th:if="${#lists.isEmpty(recentSubmissions)}" class="text-center py-4 text-muted"><small>No submissions yet.</small></div>
+                    <table class="table table-sm table-hover mb-0" th:if="${!#lists.isEmpty(recentSubmissions)}">
+                        <thead><tr><th>Student</th><th>Exam</th><th>Score</th><th>Time</th></tr></thead>
+                        <tbody>
+                            <tr th:each="s : ${recentSubmissions}">
+                                <td th:text="${s.student_name}">Student</td>
+                                <td th:text="${s.paper_title}">Paper</td>
+                                <td><strong th:text="${s.total_score}">0</strong></td>
+                                <td><small th:text="${#temporals.format(s.submit_time, 'MM-dd HH:mm')}">time</small></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <!-- Most Missed Questions -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0"><i class="bi bi-exclamation-triangle me-2"></i>Most Missed Questions</h5>
+                    <a th:href="@{/teacher/question-analytics}" class="btn btn-sm btn-outline-warning">View All</a>
+                </div>
+                <div class="card-body p-0">
+                    <div th:if="${#lists.isEmpty(missedQuestions)}" class="text-center py-4 text-muted"><small>No data yet.</small></div>
+                    <div th:each="q : ${missedQuestions}" class="p-2 border-bottom" style="border-color:var(--border-light)!important;">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-truncate me-2" th:text="${q.question_content}">Q</small>
+                            <span class="badge flex-shrink-0" th:classappend="${q.correct_rate >= 70} ? 'bg-success' : (${q.correct_rate >= 40} ? 'bg-warning' : 'bg-danger')"
+                                  th:text="${q.correct_rate} + '%'">0%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- My Papers -->
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0"><i class="bi bi-file-earmark-text me-2"></i>My Recent Papers</h5>
+                    <a th:href="@{/teacher/papers}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead><tr><th>Title</th><th>Status</th><th>Questions</th><th>Score</th><th>Duration</th><th>Actions</th></tr></thead>
+                            <tbody>
+                                <tr th:each="paper : ${papers}" th:if="${!papers.isEmpty()}">
+                                    <td><strong th:text="${paper.title}">Title</strong></td>
+                                    <td><span class="badge" th:classappend="${paper.status == 'PUBLISHED'} ? 'bg-success' : (${paper.status == 'DRAFT'} ? 'bg-warning' : 'bg-secondary')" th:text="${paper.status}">Status</span></td>
+                                    <td th:text="${paper.questionCount}">0</td>
+                                    <td th:text="${paper.totalScore}">0</td>
+                                    <td th:text="${paper.durationMinutes} + ' min'">0 min</td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a th:href="@{/teacher/papers/edit/{id}(id=${paper.id})}" class="btn btn-outline-primary"><i class="bi bi-pencil"></i></a>
+                                            <a th:href="@{/teacher/papers/questions/{id}(id=${paper.id})}" class="btn btn-outline-info"><i class="bi bi-list-ul"></i></a>
+                                            <a th:href="@{/teacher/papers/publish/{id}(id=${paper.id})}" class="btn btn-outline-success" th:if="${paper.status != 'PUBLISHED'}"><i class="bi bi-send"></i></a>
+                                            <a th:href="@{/teacher/papers/delete/{id}(id=${paper.id})}" class="btn btn-outline-danger confirm-link" th:attr="data-confirm=|Delete '${paper.title}'?|" data-confirm-title="Delete Paper"><i class="bi bi-trash"></i></a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr th:if="${papers.isEmpty()}"><td colspan="6" class="text-center py-4 text-muted">No papers yet. <a th:href="@{/teacher/papers/create}">Create one</a></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header"><h5 class="card-title mb-0"><i class="bi bi-lightning-charge me-2"></i>Quick Actions</h5></div>
+                <div class="card-body">
+                    <div class="d-flex flex-wrap gap-2">
+                        <a th:href="@{/teacher/questions/create}" class="btn btn-primary"><i class="bi bi-plus-circle me-2"></i>Add Question</a>
+                        <a th:href="@{/teacher/papers/create}" class="btn btn-success"><i class="bi bi-file-earmark-plus me-2"></i>Create Exam Paper</a>
+                        <a th:href="@{/teacher/questions}" class="btn btn-info text-white"><i class="bi bi-journal-text me-2"></i>Question Bank</a>
+                        <a th:href="@{/teacher/question-analytics}" class="btn btn-warning"><i class="bi bi-graph-down me-2"></i>Question Analytics</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div th:replace="fragments/footer :: footer-content"></div>
+
+    <span id="_qtSingle" style="display:none" th:text="${questionStats.singleChoice}">0</span>
+    <span id="_qtMulti" style="display:none" th:text="${questionStats.multipleChoice}">0</span>
+    <span id="_qtTF" style="display:none" th:text="${questionStats.trueFalse}">0</span>
+    <span id="_qtFB" style="display:none" th:text="${questionStats.fillBlank}">0</span>
+    <span id="_qtEasy" style="display:none" th:text="${questionStats.easy}">0</span>
+    <span id="_qtMedium" style="display:none" th:text="${questionStats.medium}">0</span>
+    <span id="_qtHard" style="display:none" th:text="${questionStats.hard}">0</span>
+
+    <script>
+        var qtSingle=parseInt(document.getElementById('_qtSingle').textContent)||0;
+        var qtMulti=parseInt(document.getElementById('_qtMulti').textContent)||0;
+        var qtTF=parseInt(document.getElementById('_qtTF').textContent)||0;
+        var qtFB=parseInt(document.getElementById('_qtFB').textContent)||0;
+        var qtEasy=parseInt(document.getElementById('_qtEasy').textContent)||0;
+        var qtMedium=parseInt(document.getElementById('_qtMedium').textContent)||0;
+        var qtHard=parseInt(document.getElementById('_qtHard').textContent)||0;
+
+        var typeChart=echarts.init(document.getElementById('questionTypeChart'));
+        typeChart.setOption({tooltip:{trigger:'item'},series:[{type:'pie',radius:['45%','75%'],data:[
+            {value:qtSingle,name:'Single Choice',itemStyle:{color:'#4361ee'}},
+            {value:qtMulti,name:'Multiple Choice',itemStyle:{color:'#2ec4b6'}},
+            {value:qtTF,name:'True/False',itemStyle:{color:'#f72585'}},
+            {value:qtFB,name:'Fill Blank',itemStyle:{color:'#ff9f1c'}}]}]});
+
+        var diffChart=echarts.init(document.getElementById('difficultyChart'));
+        diffChart.setOption({tooltip:{trigger:'axis'},xAxis:{type:'category',data:['Easy','Medium','Hard']},yAxis:{type:'value'},series:[{
+            data:[qtEasy,qtMedium,qtHard],type:'bar',itemStyle:{borderRadius:[8,8,0,0]},
+            color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'#2ec4b6'},{offset:1,color:'#20a39e'}])}]});
+
+        window.addEventListener('resize',function(){typeChart.resize();diffChart.resize();});
+    </script>
+</body>
+</html>

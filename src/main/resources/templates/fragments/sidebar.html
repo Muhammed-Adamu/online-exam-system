@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<!-- SIDEBAR FRAGMENT -->
+<th:block th:fragment="sidebar-content">
+            <aside class="sidebar" id="sidebar">
+                <nav class="sidebar-nav">
+                    <ul class="nav flex-column">
+
+                        <!-- Admin Menu -->
+                        <th:block th:if="${session.loginUser?.role == 'ADMIN'}">
+                            <li class="nav-item">
+                                <a class="nav-link" th:href="@{/admin/dashboard}"
+                                   th:classappend="${#strings.contains(pageTitle, 'Dashboard')} ? 'active'">
+                                    <i class="bi bi-speedometer2"></i><span>Dashboard</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" th:href="@{/admin/users}"
+                                   th:classappend="${#strings.contains(pageTitle, 'User') && !#strings.contains(pageTitle, 'Import')} ? 'active'">
+                                    <i class="bi bi-people-fill"></i><span>User Management</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" th:href="@{/admin/users/import}"
+                                   th:classappend="${#strings.contains(pageTitle, 'Import')} ? 'active'">
+                                    <i class="bi bi-file-earmark-arrow-up"></i><span>Import Users</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" th:href="@{/admin/papers}"
+                                   th:classappend="${#strings.contains(pageTitle, 'Paper') || #strings.contains(pageTitle, 'All Exam')} ? 'active'">
+                                    <i class="bi bi-file-earmark-text"></i><span>All Papers</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" th:href="@{/admin/activity-log}"
+                                   th:classappend="${#strings.contains(pageTitle, 'Activity')} ? 'active'">
+                                    <i class="bi bi-clock-history"></i><span>Activity Log</span>
+                                </a>
+                            </li>
+                        </th:block>
+
+                        <!-- Teacher Menu -->
+                        <th:block th:if="${session.loginUser?.role == 'TEACHER'}">
+                            <li class="nav-item">
+                                <a class="nav-link" th:href="@{/teacher/dashboard}"
+                                   th:classappend="${#strings.contains(pageTitle, 'Dashboard')} ? 'active'">
+                                    <i class="bi bi-speedometer2"></i><span>Dashboard</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" th:href="@{/teacher/questions}"
+                                   th:classappend="${#strings.contains(pageTitle, 'Question') && !#strings.contains(pageTitle, 'Paper')} ? 'active'">
+                                    <i class="bi bi-journal-text"></i><span>Question Bank</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" th:href="@{/teacher/papers}"
+                                   th:classappend="${#strings.contains(pageTitle, 'Paper') || #strings.contains(pageTitle, 'Assembly')} ? 'active'">
+                                    <i class="bi bi-file-earmark-text"></i><span>Exam Papers</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" th:href="@{/teacher/analysis}"
+                                   th:classappend="${#strings.contains(pageTitle, 'Analysis') && !#strings.contains(pageTitle, 'Question')} ? 'active'">
+                                    <i class="bi bi-bar-chart-fill"></i><span>Score Analysis</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" th:href="@{/teacher/question-analytics}"
+                                   th:classappend="${#strings.contains(pageTitle, 'Question Analytics')} ? 'active'">
+                                    <i class="bi bi-graph-down"></i><span>Question Analytics</span>
+                                </a>
+                            </li>
+                        </th:block>
+
+                        <!-- Student Menu -->
+                        <th:block th:if="${session.loginUser?.role == 'STUDENT'}">
+                            <li class="nav-item">
+                                <a class="nav-link" th:href="@{/student/dashboard}"
+                                   th:classappend="${#strings.contains(pageTitle, 'Dashboard')} ? 'active'">
+                                    <i class="bi bi-speedometer2"></i><span>Dashboard</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" th:href="@{/student/exams}"
+                                   th:classappend="${#strings.contains(pageTitle, 'Exam') && !#strings.contains(pageTitle, 'Result')} ? 'active'">
+                                    <i class="bi bi-pencil-square"></i><span>Available Exams</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" th:href="@{/student/scores}"
+                                   th:classappend="${#strings.contains(pageTitle, 'Score')} ? 'active'">
+                                    <i class="bi bi-trophy"></i><span>My Scores</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" th:href="@{/student/wrong-answers}"
+                                   th:classappend="${#strings.contains(pageTitle, 'Wrong')} ? 'active'">
+                                    <i class="bi bi-journal-x"></i><span>Wrong Answers</span>
+                                </a>
+                            </li>
+                        </th:block>
+                    </ul>
+                </nav>
+            </aside>
+
+            <!-- Main Content Area -->
+            <main class="main-content" id="mainContent">
+                <!-- Page Title & Breadcrumb -->
+                <div class="page-header" th:if="${pageTitle != null}">
+                    <h4 class="page-title" th:text="${pageTitle}">Page Title</h4>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb mb-0">
+                            <li class="breadcrumb-item"><a th:href="@{/}">Home</a></li>
+                            <li class="breadcrumb-item active" th:text="${pageTitle}">Current</li>
+                        </ol>
+                    </nav>
+                </div>
+
+                <!-- Alert Messages -->
+                <div th:if="${message}" class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="bi bi-check-circle me-2"></i>
+                    <span th:text="${message}">Message</span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    <span th:text="${error}">Error</span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+</th:block>
+
+</html>

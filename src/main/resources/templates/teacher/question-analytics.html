@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" data-theme="auto">
+<head th:replace="fragments/header :: head"></head>
+<body>
+    <div th:replace="fragments/header :: header-content"></div>
+    <div th:replace="fragments/sidebar :: sidebar-content"></div>
+
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title mb-0"><i class="bi bi-graph-down me-2"></i>Most Missed Questions</h5>
+        </div>
+        <div class="card-body p-0">
+            <div th:if="${#lists.isEmpty(missedQuestions)}" class="text-center py-5 text-muted">
+                <i class="bi bi-check-circle display-3 d-block mb-2 opacity-25"></i>
+                No answer data yet. Questions will appear here once students take your exams.
+            </div>
+            <table class="table table-hover mb-0" th:if="${!#lists.isEmpty(missedQuestions)}">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Question</th>
+                        <th>Category</th>
+                        <th>Difficulty</th>
+                        <th>Total Answers</th>
+                        <th>Correct</th>
+                        <th>Success Rate</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="q, iter : ${missedQuestions}">
+                        <td th:text="${iter.index + 1}">1</td>
+                        <td class="text-truncate" style="max-width:300px;" th:text="${q.question_content}">Question</td>
+                        <td th:text="${q.category}">Category</td>
+                        <td>
+                            <span class="badge" th:classappend="${q.difficulty == 'EASY'} ? 'bg-success' : (${q.difficulty == 'MEDIUM'} ? 'bg-warning' : 'bg-danger')"
+                                  th:text="${q.difficulty}">Diff</span>
+                        </td>
+                        <td th:text="${q.total_answers}">0</td>
+                        <td th:text="${q.correct_count}">0</td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="progress flex-grow-1" style="height:8px;">
+                                    <div class="progress-bar" th:classappend="${q.correct_rate >= 70} ? 'bg-success' : (${q.correct_rate >= 40} ? 'bg-warning' : 'bg-danger')"
+                                         th:style="'width:' + ${q.correct_rate} + '%'"></div>
+                                </div>
+                                <small class="fw-bold" th:text="${q.correct_rate} + '%'">0%</small>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div th:replace="fragments/footer :: footer-content"></div>
+</body>
+</html>

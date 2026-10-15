@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" data-theme="auto">
+<head th:replace="fragments/header :: head"></head>
+<body>
+    <div th:replace="fragments/header :: header-content"></div>
+    <div th:replace="fragments/sidebar :: sidebar-content"></div>
+
+    <div class="row g-4">
+        <!-- Upload Form -->
+        <div class="col-lg-7">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-file-earmark-excel me-2"></i>Import Questions from Excel
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form th:action="@{/teacher/questions/import}" method="post"
+                          enctype="multipart/form-data" class="no-auto-loading">
+                        <div class="mb-3">
+                            <label class="form-label">Select Excel File (.xlsx)</label>
+                            <input type="file" name="file" class="form-control"
+                                   accept=".xlsx" required>
+                            <div class="form-text">Only .xlsx format is supported.</div>
+                        </div>
+
+                        <div class="alert alert-info small">
+                            <i class="bi bi-info-circle me-2"></i>
+                            <strong>File format:</strong> First row must be header. See the template format on the right.
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary" id="importBtn">
+                                <i class="bi bi-upload me-2"></i>Import Questions
+                            </button>
+                            <a th:href="@{/teacher/questions}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left me-2"></i>Back to Question Bank
+                            </a>
+                        </div>
+                    </form>
+
+                    <div th:if="${importResult}" class="mt-4">
+                        <div class="alert" th:classappend="${importResult.success} ? 'alert-success' : 'alert-danger'">
+                            <h6><i class="bi me-2" th:classappend="${importResult.success} ? 'bi-check-circle' : 'bi-exclamation-triangle'"></i>
+                                <span th:text="${importResult.message}">Result</span></h6>
+                            <p class="mb-0" th:if="${importResult.count != null}">
+                                <strong th:text="${importResult.count}">0</strong> questions imported successfully.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Template Guide -->
+        <div class="col-lg-5">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-table me-2"></i>Excel Template Format
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered mb-0 small">
+                            <thead>
+                                <tr class="bg-secondary-subtle">
+                                    <th>A</th><th>B</th><th>C</th><th>D</th><th>E</th>
+                                    <th>F</th><th>G</th><th>H</th><th>I</th><th>J</th><th>K</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>question_type</strong></td>
+                                    <td><strong>category</strong></td>
+                                    <td><strong>difficulty</strong></td>
+                                    <td><strong>score</strong></td>
+                                    <td><strong>content</strong></td>
+                                    <td><strong>option_a</strong></td>
+                                    <td><strong>option_b</strong></td>
+                                    <td><strong>option_c</strong></td>
+                                    <td><strong>option_d</strong></td>
+                                    <td><strong>correct_answer</strong></td>
+                                    <td><strong>explanation</strong></td>
+                                </tr>
+                                <tr>
+                                    <td>SINGLE_CHOICE</td>
+                                    <td>Java Basics</td>
+                                    <td>EASY</td>
+                                    <td>5</td>
+                                    <td>Which keyword creates a class?</td>
+                                    <td>define</td>
+                                    <td>class</td>
+                                    <td>struct</td>
+                                    <td>type</td>
+                                    <td>B</td>
+                                    <td>The 'class' keyword</td>
+                                </tr>
+                                <tr>
+                                    <td>MULTIPLE_CHOICE</td>
+                                    <td>OOP</td>
+                                    <td>MEDIUM</td>
+                                    <td>10</td>
+                                    <td>Select primitive types</td>
+                                    <td>int</td>
+                                    <td>String</td>
+                                    <td>boolean</td>
+                                    <td>Integer</td>
+                                    <td>A,C</td>
+                                    <td>int/boolean are primitives</td>
+                                </tr>
+                                <tr>
+                                    <td>TRUE_FALSE</td>
+                                    <td>Java Basics</td>
+                                    <td>EASY</td>
+                                    <td>5</td>
+                                    <td>Java is platform-independent.</td>
+                                    <td>True</td>
+                                    <td>False</td>
+                                    <td></td>
+                                    <td></td>
+                                    <td>True</td>
+                                    <td>JVM makes it portable</td>
+                                </tr>
+                                <tr>
+                                    <td>FILL_BLANK</td>
+                                    <td>OOP</td>
+                                    <td>MEDIUM</td>
+                                    <td>5</td>
+                                    <td>The entry method is called ___.</td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td>main</td>
+                                    <td>public static void main</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="p-3">
+                        <h6 class="fw-bold">Valid Values:</h6>
+                        <ul class="small mb-1">
+                            <li><strong>question_type:</strong> SINGLE_CHOICE, MULTIPLE_CHOICE, TRUE_FALSE, FILL_BLANK</li>
+                            <li><strong>difficulty:</strong> EASY, MEDIUM, HARD</li>
+                            <li><strong>correct_answer:</strong> Single letter (A/B/C/D) for single choice &amp; true/false; comma-separated (A,C) for multiple choice; text for fill-blank</li>
+                        </ul>
+                        <p class="small text-muted mb-0"><strong>Tip:</strong> Leave option fields blank for FILL_BLANK questions.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div th:replace="fragments/footer :: footer-content"></div>
+</body>
+</html>

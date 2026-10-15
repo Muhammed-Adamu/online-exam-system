@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" data-theme="auto">
+<head th:replace="fragments/header :: head"></head>
+<body>
+    <div th:replace="fragments/header :: header-content"></div>
+    <div th:replace="fragments/sidebar :: sidebar-content"></div>
+
+    <div class="row g-4">
+        <!-- Student Stats -->
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card">
+                <div class="stat-icon bg-primary-subtle text-primary">
+                    <i class="bi bi-pencil-square"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 th:text="${stats.examsTaken}">0</h3>
+                    <p>Exams Taken</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card">
+                <div class="stat-icon bg-success-subtle text-success">
+                    <i class="bi bi-graph-up"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 th:text="${stats.averageScore}">0</h3>
+                    <p>Average Score</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card">
+                <div class="stat-icon bg-warning-subtle text-warning">
+                    <i class="bi bi-journal-x"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 th:text="${stats.wrongAnswers}">0</h3>
+                    <p>Wrong Answers</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card">
+                <div class="stat-icon bg-info-subtle text-info">
+                    <i class="bi bi-file-earmark-text"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 th:text="${#lists.size(publishedPapers)}">0</h3>
+                    <p>Available Exams</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Score Trend Chart -->
+        <div class="col-12" th:if="${!allRecords.isEmpty()}">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="bi bi-graph-up me-2"></i>Score Trend</h5>
+                </div>
+                <div class="card-body">
+                    <div id="scoreTrendChart" style="height: 300px;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Available Exams with countdown -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0"><i class="bi bi-pencil-square me-2"></i>Available Exams</h5>
+                    <a th:href="@{/student/exams}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body p-0">
+                    <div th:each="paper : ${publishedPapers}" th:if="${!publishedPapers.isEmpty()}"
+                         class="p-3 border-bottom">
+                        <div class="d-flex justify-content-between align-items-start mb-1">
+                            <strong th:text="${paper.title}">Title</strong>
+                            <span class="badge" th:classappend="${paper.startTime == null || paper.startTime.isBefore(T(java.time.LocalDateTime).now())} ? 'bg-success' : 'bg-warning'"
+                                  th:text="${paper.startTime == null || paper.startTime.isBefore(T(java.time.LocalDateTime).now())} ? 'Open' : 'Upcoming'">Status</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">
+                                <i class="bi bi-clock me-1"></i><span th:text="${paper.durationMinutes} + ' min'">0</span>
+                                <i class="bi bi-list-ul ms-2 me-1"></i><span th:text="${paper.questionCount} + ' Qs'">0</span>
+                                <span th:if="${paper.endTime != null}" class="ms-2 text-danger">
+                                    <i class="bi bi-calendar-x me-1"></i>Closes <span th:text="${#temporals.format(paper.endTime, 'MMM dd HH:mm')}">date</span>
+                                </span>
+                            </small>
+                            <a th:href="@{/student/exam/start/{id}(id=${paper.id})}" class="btn btn-primary btn-sm">
+                                <i class="bi bi-play-fill me-1"></i>Start
+                            </a>
+                        </div>
+                    </div>
+                    <div th:if="${#lists.isEmpty(publishedPapers)}" class="text-center py-4 text-muted">
+                        <i class="bi bi-inbox display-5 d-block mb-2 opacity-25"></i>No exams available right now.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Records -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0"><i class="bi bi-clock-history me-2"></i>Recent Exams</h5>
+                    <a th:href="@{/student/scores}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body p-0">
+                    <div th:each="record : ${recentRecords}" th:if="${!recentRecords.isEmpty()}"
+                         class="p-3 border-bottom d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong th:text="${record.paperTitle}">Paper</strong>
+                            <br><small class="text-muted" th:text="${record.status} + ' | Score: ' + (record.totalScore != null ? record.totalScore : 'N/A')"></small>
+                        </div>
+                        <a th:href="@{/student/exam/result/{id}(id=${record.id})}" class="btn btn-outline-info btn-sm">
+                            <i class="bi bi-eye"></i> View
+                        </a>
+                    </div>
+                    <div th:if="${#lists.isEmpty(recentRecords)}" class="text-center py-4 text-muted">
+                        No exams taken yet. <a th:href="@{/student/exams}">Take an exam</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div th:replace="fragments/footer :: footer-content"></div>
+
+    <script th:if="${!allRecords.isEmpty()}" th:inline="javascript">
+        var dates = [];
+        var scores = [];
+        /* Build chart data from graded records, sorted chronologically */
+        var recordData = [];
+        /*[# th:each="r : ${allRecords}"]*/
+        /*[# th:if="${r.status == 'GRADED' && r.totalScore != null}"]*/
+        recordData.push({
+            date: /*[[${r.submitTime != null ? r.submitTime.toString() : r.createdAt != null ? r.createdAt.toString() : ''}]]*/ '',
+            score: /*[[${r.totalScore}]]*/ 0,
+            title: /*[[${r.paperTitle != null ? r.paperTitle : 'Exam'}]]*/ 'Exam'
+        });
+        /*[/]*/
+        /*[/]*/
+        recordData.sort(function(a, b) { return new Date(a.date) - new Date(b.date); });
+        recordData.forEach(function(r) { dates.push(r.title); scores.push(r.score); });
+
+        if (dates.length > 0) {
+            var trendChart = echarts.init(document.getElementById('scoreTrendChart'));
+            trendChart.setOption({
+                tooltip: { trigger: 'axis' },
+                grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+                xAxis: { type: 'category', data: dates, axisLabel: { rotate: 30, fontSize: 11 } },
+                yAxis: { type: 'value', name: 'Score' },
+                series: [{
+                    data: scores,
+                    type: 'line',
+                    smooth: true,
+                    symbol: 'circle',
+                    symbolSize: 10,
+                    lineStyle: { color: '#4361ee', width: 3 },
+                    itemStyle: { color: '#4361ee' },
+                    areaStyle: {
+                        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                            { offset: 0, color: 'rgba(67, 97, 238, 0.3)' },
+                            { offset: 1, color: 'rgba(67, 97, 238, 0.02)' }
+                        ])
+                    },
+                    markLine: {
+                        silent: true,
+                        data: [{ type: 'average', name: 'Average', label: { formatter: 'Avg: {c}' } }],
+                        lineStyle: { color: '#f72585', type: 'dashed' }
+                    }
+                }]
+            });
+            window.addEventListener('resize', function() { trendChart.resize(); });
+        }
+    </script>
+</body>
+</html>

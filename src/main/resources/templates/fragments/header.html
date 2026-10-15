@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<!-- HEAD FRAGMENT: Used by all pages -->
+<head th:fragment="head">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${pageTitle} + ' - Online Exam System'">Online Exam System</title>
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- ECharts -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+
+    <!-- Custom CSS -->
+    <link th:href="@{/css/style.css}" rel="stylesheet">
+    <link th:href="@{/css/themes.css}" rel="stylesheet">
+
+    <!-- App context path for JS -->
+    <script th:inline="javascript">
+        var ctxPath = /*[[${#servletContext.contextPath}]]*/ '';
+    </script>
+
+    <!-- Theme initialization - prevent flash of wrong theme -->
+    <script>
+        (function() {
+            const saved = localStorage.getItem('exam-theme');
+            if (saved === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            } else if (saved === 'light') {
+                document.documentElement.setAttribute('data-theme', 'light');
+            } else if (saved === 'auto' || !saved) {
+                document.documentElement.setAttribute('data-theme', 'auto');
+            }
+        })();
+    </script>
+</head>
+
+<!-- HEADER CONTENT FRAGMENT: Top nav, settings panel, layout start -->
+<th:block th:fragment="header-content">
+    <div class="app-wrapper">
+        <!-- Top Navigation Bar -->
+        <nav class="navbar navbar-expand-lg top-navbar" id="topNavbar">
+            <div class="container-fluid">
+                <div class="d-flex align-items-center">
+                    <button class="btn btn-icon sidebar-toggle me-2" id="sidebarToggle"
+                            onclick="toggleSidebar()">
+                        <i class="bi bi-list"></i>
+                    </button>
+                    <a class="navbar-brand fw-bold" th:href="@{/}">
+                        <i class="bi bi-mortarboard-fill me-2"></i>Online Exam System
+                    </a>
+                </div>
+                <div class="d-flex align-items-center ms-auto">
+                    <!-- Settings Icon -->
+                    <button class="btn btn-icon me-2" id="settingsToggle"
+                            onclick="toggleSettings()" title="Settings">
+                        <i class="bi bi-gear-fill settings-icon"></i>
+                    </button>
+                    <!-- Notification Bell (All roles) -->
+                    <div class="notification-wrapper" id="notificationWrapper">
+                        <button class="btn btn-icon me-2 position-relative" id="notificationBell"
+                                onclick="toggleNotificationDropdown()" title="Notifications">
+                            <i class="bi bi-bell-fill"></i>
+                            <span class="notification-badge d-none" id="notificationBadge">0</span>
+                        </button>
+                        <!-- Notification Dropdown -->
+                        <div class="notification-dropdown" id="notificationDropdown">
+                            <div class="notification-header">
+                                <h6 class="mb-0"><i class="bi bi-bell me-2"></i>Notifications</h6>
+                                <button class="btn btn-sm btn-link text-decoration-none" onclick="markAllNotificationsRead()">
+                                    Mark all read
+                                </button>
+                            </div>
+                            <div class="notification-body" id="notificationList">
+                                <div class="text-center py-3 text-muted">
+                                    <div class="spinner-border spinner-border-sm" role="status"></div>
+                                    <p class="mt-2 mb-0 small">Loading...</p>
+                                </div>
+                            </div>
+                            <div class="notification-footer">
+                                <span class="small text-muted" id="notificationFooterText">0 unread</span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- User Dropdown -->
+                    <div class="dropdown">
+                        <button class="btn btn-user dropdown-toggle d-flex align-items-center" type="button"
+                                data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-person-circle fs-5 me-2 flex-shrink-0"></i>
+                            <span class="d-none d-md-inline text-truncate" style="max-width: 140px;"
+                                  th:text="${session.loginUser?.realName}">User</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                                <div class="dropdown-item-text">
+                                    <small class="text-muted" th:text="${session.loginUser?.username}">username</small><br>
+                                    <span class="badge" th:classappend="|role-badge-${#strings.toLowerCase(session.loginUser?.role)}|"
+                                          th:text="${session.loginUser?.role}">ROLE</span>
+                                </div>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" th:href="@{/change-password}">
+                                <i class="bi bi-shield-lock me-2"></i>Change Password</a></li>
+                            <li><a class="dropdown-item" th:href="@{/logout}">
+                                <i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Settings Panel (Slide-out) -->
+        <div class="settings-overlay" id="settingsOverlay" onclick="toggleSettings()"></div>
+        <div class="settings-panel" id="settingsPanel">
+            <div class="settings-header">
+                <h5 class="mb-0"><i class="bi bi-gear-fill me-2"></i>Settings</h5>
+                <button class="btn btn-icon" onclick="toggleSettings()">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+            <div class="settings-body">
+                <div class="mb-4">
+                    <label class="form-label fw-semibold"><i class="bi bi-palette me-2"></i>Theme</label>
+                    <div class="theme-options">
+                        <div class="form-check theme-option" onclick="setTheme('light')">
+                            <input class="form-check-input" type="radio" name="theme" value="light" id="themeLight">
+                            <label class="form-check-label" for="themeLight">
+                                <i class="bi bi-sun-fill me-2"></i> Light
+                            </label>
+                        </div>
+                        <div class="form-check theme-option" onclick="setTheme('dark')">
+                            <input class="form-check-input" type="radio" name="theme" value="dark" id="themeDark">
+                            <label class="form-check-label" for="themeDark">
+                                <i class="bi bi-moon-fill me-2"></i> Dark
+                            </label>
+                        </div>
+                        <div class="form-check theme-option" onclick="setTheme('auto')">
+                            <input class="form-check-input" type="radio" name="theme" value="auto" id="themeAuto">
+                            <label class="form-check-label" for="themeAuto">
+                                <i class="bi bi-circle-half me-2"></i> System Default
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label class="form-label fw-semibold"><i class="bi bi-fonts me-2"></i>Font Size</label>
+                    <select class="form-select" id="fontSizeSelect" onchange="changeFontSize(this.value)">
+                        <option value="small">Small</option>
+                        <option value="normal" selected>Normal</option>
+                        <option value="large">Large</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Layout: Sidebar + Content -->
+        <div class="main-layout" id="mainLayout">
+</th:block>
+
+</html>
