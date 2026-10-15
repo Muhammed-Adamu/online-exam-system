@@ -237,10 +237,67 @@ Optional environment variables:
 | `DB_PASSWORD` | *(none — required)* | Database password |
 | `DB_USERNAME` | `root` | Database user |
 | `DB_URL` | local `online_exam_system` | Full JDBC URL |
-| `SERVER_PORT` | `8080` | HTTP port (hosting platforms usually set this) |
+| `PORT` | `8080` | HTTP port — set automatically by hosting platforms |
 
 Application settings such as the context path (`/exam`) and multipart upload limits live
 in `src/main/resources/application.properties`.
+
+---
+
+## Deployment
+
+The app ships with a `Dockerfile`, so it runs on any container host. The notes below
+cover a free-tier deployment on **Render** with a **free MySQL** database from Aiven.
+
+### Why a container is required
+
+Render has no native Java runtime, so the project is built and run inside Docker. The
+`Dockerfile` is a multi-stage build: Maven compiles the jar, then a slim JRE image runs it.
+
+> **Important:** on Render, leave **Build Command** and **Start Command empty**. Setting
+> them makes Render use its native build environment, which fails with
+> `JAVA_HOME is not set`. Both commands live in the `Dockerfile` instead.
+
+### 1. Create a free MySQL database
+
+Aiven's free MySQL plan (1 CPU / 1 GB RAM / 5 GB storage) is real MySQL, so no code
+changes are needed. TiDB Cloud Serverless is a MySQL-compatible alternative.
+
+From the Aiven console, note the **host**, **port**, **user**, **password** and
+**database name**, then create your schema:
+
+```bash
+mysql -h <host> -P <port> -u <user> -p --ssl-mode=REQUIRED < sql/schema.sql
+mysql -h <host> -P <port> -u <user> -p --ssl-mode=REQUIRED < sql/test-data.sql
+```
+
+### 2. Create the Render web service
+
+1. **New → Web Service**, and connect this GitHub repository
+2. **Language: Docker** (this is what makes Render read the `Dockerfile`)
+3. **Instance type: Free**
+4. Leave Build Command and Start Command **empty**
+5. Add these environment variables under **Environment**:
+
+| Key | Value |
+|---|---|
+| `DB_URL` | `jdbc:mysql://<host>:<port>/<database>?ssl-mode=REQUIRED&serverTimezone=Asia/Shanghai&characterEncoding=UTF-8&allowPublicKeyRetrieval=true` |
+| `DB_USERNAME` | your database user |
+| `DB_PASSWORD` | your database password |
+
+6. Deploy
+
+Your app will be live at `https://<service-name>.onrender.com/exam` — note the
+**`/exam`** context path, which is easy to forget when linking from a portfolio.
+
+### Free-tier behaviour
+
+Render's free instances **sleep after about 15 minutes of inactivity**, and the next
+visitor waits roughly **30–60 seconds** for it to wake. If you link this from a
+portfolio, add a short note such as *"free tier — the demo may take a moment to load."*
+
+The container is capped at **512 MB RAM**, which is why the `Dockerfile` sets
+`-XX:MaxRAMPercentage=70` — it keeps the JVM heap comfortably inside the limit.
 
 ---
 

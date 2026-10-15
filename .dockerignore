@@ -1,0 +1,25 @@
+# Keep the build context small - the Dockerfile only needs pom.xml and src/.
+# Anything listed here never even gets uploaded to the build server.
+
+target/
+logs/
+*.log
+*.log.gz
+
+.git/
+.gitignore
+.github/
+
+.idea/
+*.iml
+.vscode/
+
+.claude/
+
+# Docs and data - not needed at runtime
+README.md
+PUBLISH-GUIDE.md
+sql/
+
+Dockerfile
+.dockerignore
